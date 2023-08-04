@@ -1,22 +1,23 @@
-# D3b Bixu Repository Template
+# D3b Dewrangle Python API
 
-Use this template to bootstrap a new D3b bixu repository 
+Python API for interacting with [Dewrangle](https://github.com/kids-first/dewrangle).
 
-### Badges
+## Quick Dewrangle API Overview
 
-Update the LICENSE badge to point to the new repo location on GitHub.
-Note that the LICENSE badge will fail to render correctly unless the repo has
-been set to **public**.
+The Dewrangle API uses [Relay](https://relay.dev/) GraphQL. The Python API uses the [gql](https://github.com/graphql-python/gql) library.
 
-Add additional badges for CI, docs, and other integrations as needed within the
-`<p>` tag next to the LICENSE.
+## Getting Started
 
-### Repo Description
+Before running any of the API scripts, an authentication tocken must be created on Dewrangle and stored in the credentials.py file located in the root directory of this repo.
 
-Update the repositories description with a short summary of the repository's
-intent.
-Include an appropriate emoji at the start of the summary.
+1. Login to [Dewrangle](https://dewrangle.com/)
 
-Add a handful of tags that summarize topics relating to the repository.
-If the repo has a documentation site or webpage, add it next to the repository
-description.
+1. Click on you profile and go to Settings
+
+1. Click Generate new token and copy the token into credentials.py
+
+### credentials.py file
+
+```
+api_key = "<<YOUR_KEY>>"
+```

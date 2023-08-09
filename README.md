@@ -49,3 +49,22 @@ required arguments:
   -c CREDENTIAL, --credential CREDENTIAL
                         Dewrangle AWS credential ID
 ```
+
+## Remove (Delete) a Volume
+
+Remove a volume from a study using either the volumes name or volume id. The script first checks if the volume is attached to the user provided study. If there are multiple volumes with the same volume name (see Add and Hash Volume above), the script will return all a list of all volumes in the study with the volume name and volume id and will require you to rerun the script and provide the volume id.
+
+```
+python delete_volume.py -h
+usage: delete_volume.py [-h] [--vid VID] [--volume VOLUME] [--run] -s STUDY
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --vid VID             Optional, volume id; required when multiple volumes with the same name are loaded to a directory
+  --volume VOLUME       Volume name, only optional if the vid option is given
+  --run                 Flag to actually run deletion mutations
+
+required arguments:
+  -s STUDY, --study STUDY
+                        Study name
+```

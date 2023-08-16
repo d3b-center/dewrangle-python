@@ -47,6 +47,39 @@ def add_volume(client, study_id, prefix, region, bucket, aws_cred):
     return volume_id
 
 
+def list_volume(client, volume_id):
+    """Run Dewrangle create volume mutation."""
+
+    # prepare mutation
+    mutation = gql(
+        """
+        mutation VolumeListMutation($id: ID!) {
+            volumeList(id: $id) {
+                errors {
+                    ... on MutationError {
+                        message
+                        field
+                    }
+                }
+                temporalWorkflow {
+                    workflowId
+                }    
+            }
+        }
+        """
+    )
+
+    params = {"id": volume_id}
+
+    # run mutation
+    result = client.execute(mutation, variable_values=params)
+
+    # check result
+    workflow_id = result["volumeList"]["temporalWorkflow"]["workflowId"]
+
+    return workflow_id
+
+
 def get_study_and_cred_id(client, study_name, cred_name):
     """Get study and credential ids from study name."""
 

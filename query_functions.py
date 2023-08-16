@@ -80,6 +80,39 @@ def list_volume(client, volume_id):
     return workflow_id
 
 
+def list_and_hash_volume(client, volume_id):
+    """Run Dewrangle create volume mutation."""
+
+    # prepare mutation
+    mutation = gql(
+        """
+        mutation VolumeListHashMutation($id: ID!) {
+            volumeListAndHash(id: $id) {
+                errors {
+                    ... on MutationError {
+                        message
+                        field
+                    }
+                }
+                temporalWorkflow {
+                    workflowId
+                }    
+            }
+        }
+        """
+    )
+
+    params = {"id": volume_id}
+
+    # run mutation
+    result = client.execute(mutation, variable_values=params)
+
+    # check result
+    workflow_id = result["volumeListAndHash"]["temporalWorkflow"]["workflowId"]
+
+    return workflow_id
+
+
 def get_study_and_cred_id(client, study_name, cred_name):
     """Get study and credential ids from study name."""
 

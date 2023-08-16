@@ -63,18 +63,19 @@ def main(args):
     study_id, aws_cred_id = qf.get_study_and_cred_id(client, study_name, aws_cred)
 
     # run create volume mutation
-    ## TODO: figure out what the result is and make a better name
-    # temp_res = add_volume(client, study_id, aws_cred_id, prefix, region, bucket)
     volume_id = qf.add_volume(client, study_id, prefix, region, bucket, aws_cred_id)
 
-    print(volume_id)
+    print("Volume id: {}".format(volume_id))
 
-    # TODO: run hash mutation
+    # run hash mutation
+    workflow_id = qf.list_and_hash_volume(client, volume_id)
+
+    print("Hashing job id: {}".format(workflow_id))
 
     # TODO: verify hash jobs launched? (spit out Cavatica api call????)
 
     # clean up and finish
-    print("Volume(s) successfully added.")
+    print("Volume(s) successfully added and is being hashed.")
 
 
 if __name__ == "__main__":

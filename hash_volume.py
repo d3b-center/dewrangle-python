@@ -1,4 +1,4 @@
-"""Add volume to a Dewrangle study."""
+"""Hash files in a volume."""
 import sys
 import argparse
 import re

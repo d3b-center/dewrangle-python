@@ -36,6 +36,7 @@ def parse_args(args):
 
     return (study, name, vid)
 
+
 def main(args):
     """Main, take args, run script."""
     study_name, name, vid = parse_args(args)

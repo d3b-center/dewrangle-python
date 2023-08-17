@@ -20,7 +20,8 @@ def parse_args(args):
     args = parser.parse_args()
     study = args.study
 
-    return (study)
+    return study
+
 
 def main(args):
     """Main, take args, run script."""
@@ -37,7 +38,7 @@ def main(args):
     )
     client = Client(transport=transport, fetch_schema_from_transport=True)
 
-    # find all 
+    # find all
     study_id = qf.get_study_and_volumes(client, study_name)[0]
     billing_group_list = qf.get_study_billing_groups(client, study_id)
 

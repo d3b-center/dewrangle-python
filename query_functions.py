@@ -216,19 +216,19 @@ def get_study_and_volumes(client, study_name):
     # TODO: add section to handle study not existing (or user not having access)
 
     # loop through query results, find the study we're looking for and it's volumes
-    for edge in result['viewer']['studyUsers']['edges']:
-        study = edge['node']['study']
-        if study['name'] == study_name:
-            study_id = study['id']
-            if len(study['volumes']['edges']) > 0:
-                for volume_edge in study['volumes']['edges']:
-                    volume = volume_edge['node']
-                    vid = volume['id']
-                    vname = volume['name']
+    for edge in result["viewer"]["studyUsers"]["edges"]:
+        study = edge["node"]["study"]
+        if study["name"] == study_name:
+            study_id = study["id"]
+            if len(study["volumes"]["edges"]) > 0:
+                for volume_edge in study["volumes"]["edges"]:
+                    volume = volume_edge["node"]
+                    vid = volume["id"]
+                    vname = volume["name"]
                     study_volumes.append(":".join([vname, vid]))
             else:
                 print("no volumes in study")
-    
+
     return study_id, study_volumes
 
 
@@ -360,14 +360,15 @@ def get_study_billing_groups(client, study_id):
             if study_id == study["node"]["id"]:
                 org_count += 1
                 # get billing group from org and format similarly
-                billing_group_list = org["node"]["organization"]["billingGroups"]["edges"]
+                billing_group_list = org["node"]["organization"]["billingGroups"][
+                    "edges"
+                ]
 
     if org_count > 1:
-        raise ValueError(
-                "Study {} found in multiple organizations.".format(study_id)
-            )
+        raise ValueError("Study {} found in multiple organizations.".format(study_id))
 
     return billing_group_list
+
 
 def get_billing_id(client, study_id, billing):
     "Get billing group id from billing group name."
@@ -382,8 +383,6 @@ def get_billing_id(client, study_id, billing):
             billing_id = bg["node"]["id"]
 
     if billing_id is None:
-        raise ValueError(
-                "Billing group not found."
-            )
+        raise ValueError("Billing group not found.")
 
     return billing_id

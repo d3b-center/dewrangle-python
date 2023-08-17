@@ -25,6 +25,13 @@ def parse_args(args):
         default="us-east-1",
         required=False,
     )
+    parser.add_argument(
+        "-g",
+        "--billing",
+        help="Optional, billing group name. When not provided, use default billing group for organization",
+        default=None,
+        required=False,
+    )
     # required args
     required_args = parser.add_argument_group("required arguments")
     required_args.add_argument("-s", "--study", help="Study name", required=True)
@@ -40,13 +47,14 @@ def parse_args(args):
     study = args.study
     bucket = args.bucket
     aws_cred = args.credential
+    billing = args.billing
 
-    return (prefix, region, study, bucket, aws_cred)
+    return (prefix, region, study, bucket, aws_cred, billing)
 
 
 def main(args):
     """Main, take args, run script."""
-    prefix, region, study_name, bucket, aws_cred = parse_args(args)
+    prefix, region, study_name, bucket, aws_cred, billing = parse_args(args)
 
     endpoint = "https://dewrangle.com/api/graphql"
 
@@ -62,13 +70,17 @@ def main(args):
 
     study_id, aws_cred_id = qf.get_study_and_cred_id(client, study_name, aws_cred)
 
+    billing_group_id = None
+    if billing:
+        billing_group_id = qf.get_billing_id(client, study_id, billing)
+
     # run create volume mutation
     volume_id = qf.add_volume(client, study_id, prefix, region, bucket, aws_cred_id)
 
     print("Volume id: {}".format(volume_id))
 
     # run hash mutation
-    workflow_id = qf.list_and_hash_volume(client, volume_id)
+    workflow_id = qf.list_and_hash_volume(client, volume_id, billing_group_id)
 
     print("Hashing job id: {}".format(workflow_id))
 

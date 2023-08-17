@@ -86,8 +86,8 @@ def list_and_hash_volume(client, volume_id, billing_id):
     # prepare mutation
     mutation = gql(
         """
-        mutation VolumeListHashMutation($id: ID!) {
-            volumeListAndHash(id: $id) {
+        mutation VolumeListHashMutation($id: ID!, $input: VolumeListAndHashInput) {
+            volumeListAndHash(id: $id, input: $input) {
                 errors {
                     ... on MutationError {
                         message
@@ -103,6 +103,9 @@ def list_and_hash_volume(client, volume_id, billing_id):
     )
 
     params = {"id": volume_id}
+
+    if billing_id is not None:
+        params["input"] = {"billingGroupId": billing_id}
 
     # run mutation
     result = client.execute(mutation, variable_values=params)

@@ -21,7 +21,7 @@ def parse_args(args):
     parser.add_argument(
         "-r",
         "--region",
-        help="Optional, Bucket AWS region. Default: US East (N. Virginia)",
+        help="Optional, Bucket AWS region code. Default: us-east-1",
         default="us-east-1",
         required=False,
     )
@@ -37,7 +37,7 @@ def parse_args(args):
     required_args.add_argument("-s", "--study", help="Study name", required=True)
     required_args.add_argument("-b", "--bucket", help="Bucket name", required=True)
     required_args.add_argument(
-        "-c", "--credential", help="Dewrangle AWS credential ID", required=True
+        "-c", "--credential", help="Dewrangle AWS credential name", required=True
     )
 
     # parse and return arguments

@@ -232,6 +232,7 @@ def get_study_and_volumes(client, study_name):
     return study_id, study_volumes
 
 
+'''
 def make_cred(client, cred_name, study_id):
     """Get aws credential id from name.
     Have to use credentialCreate mutation until query is available."""
@@ -275,6 +276,7 @@ def make_cred(client, cred_name, study_id):
     print(cred_id)
     # return credential id
     return cred_id
+'''
 
 
 def remove_volume_from_study(client, vid, run):

@@ -116,13 +116,11 @@ def list_and_hash_volume(client, volume_id, billing_id):
     return workflow_id
 
 
-# TODO: change this to study_id and only return cred_id
-def get_study_and_cred_id(client, study_name, cred_name):
-    """Get study and credential ids from study name."""
+def get_cred_id(client, study_id, cred_name):
+    """Get credential ids from a study."""
 
     # query all studies and credentials the user has access to.
     # in the future, this should be a simpler query to get study id from study name
-    study_id = None
     cred_id = None
     # set up query to get all available studies
     query = gql(
@@ -134,7 +132,6 @@ def get_study_and_cred_id(client, study_name, cred_name):
                         node {
                             study {
                                 id
-                                name
                                 credentials {
                                     edges {
                                         node {
@@ -160,8 +157,7 @@ def get_study_and_cred_id(client, study_name, cred_name):
     # loop through query results, find the study we're looking for and it's volumes
     for edge in result["viewer"]["studyUsers"]["edges"]:
         study = edge["node"]["study"]
-        if study["name"] == study_name:
-            study_id = study["id"]
+        if study["id"] == study_id:
             if len(study["credentials"]["edges"]) > 0:
                 # check credential name
                 for cred_edge in study["credentials"]["edges"]:
@@ -176,12 +172,12 @@ def get_study_and_cred_id(client, study_name, cred_name):
     if cred_id is None:
         print("{} credential not found in study".format(cred_name))
 
-    return study_id, cred_id
+    return cred_id
 
 
 # TODO: test this with a study not existing and existing multiple times (and in multiple orgs)
 def get_study_id(client, study_name):
-    """Query all available studies and find study id from name"""
+    """Query all available studies, find study id, and get a list of volumes"""
 
     # this function could be split into two get_studies and get_study_id and separate the query
     # from checking the study name like how get_study_billing_groups and get_billing_id work
@@ -440,7 +436,6 @@ def get_study_billing_groups(client, study_id):
                                     edges {
                                         node {
                                             id
-                                            name
                                         }
                                     }
                                 }

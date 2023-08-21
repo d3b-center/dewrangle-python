@@ -1,7 +1,6 @@
 """List available billing groups in a study."""
 import sys
 import argparse
-import re
 from gql import gql, Client
 from gql.transport.aiohttp import AIOHTTPTransport
 import credential
@@ -39,7 +38,7 @@ def main(args):
     client = Client(transport=transport, fetch_schema_from_transport=True)
 
     # find all
-    study_id = qf.get_study_and_volumes(client, study_name)[0]
+    study_id = qf.get_study_id(client, study_name)
     billing_group_list = qf.get_study_billing_groups(client, study_id)
 
     print("=================================================================")

@@ -116,6 +116,7 @@ def list_and_hash_volume(client, volume_id, billing_id):
     return workflow_id
 
 
+# TODO: change this to study_id and only return cred_id
 def get_study_and_cred_id(client, study_name, cred_name):
     """Get study and credential ids from study name."""
 
@@ -178,6 +179,106 @@ def get_study_and_cred_id(client, study_name, cred_name):
     return study_id, cred_id
 
 
+# TODO: test this with a study not existing and existing multiple times (and in multiple orgs)
+def get_study_id(client, study_name):
+    """Query all available studies and find study id from name"""
+
+    # this function could be split into two get_studies and get_study_id and separate the query
+    # from checking the study name like how get_study_billing_groups and get_billing_id work
+
+    study_id = ""
+    study_ids = []
+    # set up query to get all available studies
+    query = gql(
+        """
+        query {
+            viewer {
+                studyUsers {
+                    edges {
+                        node {
+                            study {
+                                id
+                                name
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        """
+    )
+
+    # run query
+    result = client.execute(query)
+
+    # loop through query results, find the study we're looking for and it's volumes
+    for edge in result["viewer"]["studyUsers"]["edges"]:
+        study = edge["node"]["study"]
+        if study["name"] == study_name:
+            study_ids.append(study["id"])
+
+    if len(study_ids) == 1:
+        study_id = study_ids[0]
+    elif len(study_ids) == 0:
+        raise ValueError("Study {} not found".format(study_name))
+    else:
+        raise ValueError(
+            "Study {} found multiple times. Please delete or rename studies so there is only one {}".format(
+                study_name, study_name
+            )
+        )
+
+    return study_id
+
+
+def get_study_volumes(client, study_id):
+    """Query all available studies and find study id from name"""
+    study_volumes = []
+    # set up query to get all available studies
+    query = gql(
+        """
+        query {
+            viewer {
+                studyUsers {
+                    edges {
+                        node {
+                            study {
+                                id
+                                volumes {
+                                    edges {
+                                        node {
+                                            id
+                                            name
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        """
+    )
+
+    # run query
+    result = client.execute(query)
+
+    # loop through query results, find the study we're looking for and it's volumes
+    for edge in result["viewer"]["studyUsers"]["edges"]:
+        study = edge["node"]["study"]
+        if study["id"] == study_id:
+            if len(study["volumes"]["edges"]) > 0:
+                for volume_edge in study["volumes"]["edges"]:
+                    # get volume from study and format similarly
+                    study_volumes.append(volume_edge)
+            else:
+                raise ValueError("No volumes in study.")
+
+    return study_volumes
+
+
+# TODO: delete this after everything moves to new functions
 def get_study_and_volumes(client, study_name):
     """Query all available studies and find study id from name"""
     study_id = ""

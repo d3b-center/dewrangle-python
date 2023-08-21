@@ -47,7 +47,7 @@ def main(args):
     )
     print("Volumes attached to study:")
     for vol in volumes:
-        print("{}: {}".format(vol["node"]["name"], vol["node"]["id"]))
+        print("{}: {}".format(volumes[vol], vol))
 
     print(
         "====================================================================================="

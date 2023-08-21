@@ -152,8 +152,6 @@ def get_cred_id(client, study_id, cred_name):
     # run query
     result = client.execute(query)
 
-    # TODO: add section to handle study not existing (or user not having access)
-
     # loop through query results, find the study we're looking for and it's volumes
     for edge in result["viewer"]["studyUsers"]["edges"]:
         study = edge["node"]["study"]
@@ -175,7 +173,6 @@ def get_cred_id(client, study_id, cred_name):
     return cred_id
 
 
-# TODO: test this with a study not existing and existing multiple times (and in multiple orgs)
 def get_study_id(client, study_name):
     """Query all available studies, find study id, and get a list of volumes"""
 
@@ -229,7 +226,7 @@ def get_study_id(client, study_name):
 
 def get_study_volumes(client, study_id):
     """Query all available studies and find study id from name"""
-    study_volumes = []
+    study_volumes = {}
     # set up query to get all available studies
     query = gql(
         """
@@ -266,8 +263,10 @@ def get_study_volumes(client, study_id):
         if study["id"] == study_id:
             if len(study["volumes"]["edges"]) > 0:
                 for volume_edge in study["volumes"]["edges"]:
-                    # get volume from study and format similarly
-                    study_volumes.append(volume_edge)
+                    # get volume from study and format as dict
+                    vid = volume_edge["node"]["id"]
+                    vname = volume_edge["node"]["name"]
+                    study_volumes[vid] = vname
             else:
                 raise ValueError("No volumes in study.")
 
@@ -309,8 +308,6 @@ def get_study_and_volumes(client, study_name):
 
     # run query
     result = client.execute(query)
-
-    # TODO: add section to handle study not existing (or user not having access)
 
     # loop through query results, find the study we're looking for and it's volumes
     for edge in result["viewer"]["studyUsers"]["edges"]:
@@ -410,7 +407,7 @@ def remove_volume_from_study(client, vid, run):
 def get_study_billing_groups(client, study_id):
     """Get available billing groups for a study."""
 
-    billing_group_list = []
+    billing_groups = {}
 
     # query all organizations, studies, and billing groups the user has access to.
     # set up query to get all available studies
@@ -458,14 +455,15 @@ def get_study_billing_groups(client, study_id):
             if study_id == study["node"]["id"]:
                 org_count += 1
                 # get billing group from org and format similarly
-                billing_group_list = org["node"]["organization"]["billingGroups"][
-                    "edges"
-                ]
+                for node in org["node"]["organization"]["billingGroups"]["edges"]:
+                    bid = node["node"]["id"]
+                    bname = node["node"]["name"]
+                    billing_groups[bid] = bname
 
     if org_count > 1:
         raise ValueError("Study {} found in multiple organizations.".format(study_id))
 
-    return billing_group_list
+    return billing_groups
 
 
 def get_billing_id(client, study_id, billing):
@@ -477,8 +475,8 @@ def get_billing_id(client, study_id, billing):
     billing_id = None
 
     for bg in billing_group_list:
-        if billing == bg["node"]["name"]:
-            billing_id = bg["node"]["id"]
+        if billing == bg:
+            billing_id = bg
 
     if billing_id is None:
         raise ValueError("Billing group not found.")

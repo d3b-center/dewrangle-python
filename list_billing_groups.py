@@ -39,13 +39,13 @@ def main(args):
 
     # find all
     study_id = qf.get_study_id(client, study_name)
-    billing_group_list = qf.get_study_billing_groups(client, study_id)
+    billing_groups = qf.get_study_billing_groups(client, study_id)
 
     print("=================================================================")
     print("Available billing groups:")
 
-    for bg in billing_group_list:
-        print("{}: {}".format(bg["node"]["name"], bg["node"]["id"]))
+    for bg in billing_groups:
+        print("{}: {}".format(billing_groups[bg], bg))
 
     print("=================================================================")
 

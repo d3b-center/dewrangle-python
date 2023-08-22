@@ -482,3 +482,44 @@ def get_billing_id(client, study_id, billing):
         raise ValueError("Billing group not found.")
 
     return billing_id
+
+
+def process_volumes(study, volumes, **kwargs):
+    """Process a dict of volume names and ids, if there's only 1, check it's in the study,
+    and returns volume_id."""
+    volume_id = kwargs.get("vid", None)
+    vname = kwargs.get("vname", None)
+
+    if volume_id:
+        if volume_id not in volumes.keys():
+            raise ValueError(
+                "Volume id not present in study. Ensure you are providing the whole volume id."
+            )
+    else:
+        # see how many times the volume was added to the study
+        matching_volumes = []
+        for vol in volumes:
+            if volumes[vol] == vname:
+                matching_volumes.append(vol)
+        count = len(matching_volumes)
+
+        if count == 0:
+            print("{} volume not found in {}".format(vname, study))
+        elif count == 1:
+            volume_id = matching_volumes[0]
+        else:
+            print(
+                "=============================================================================================="
+            )
+            print("Multiple volumes named {} found in {}".format(vname, study))
+            print(
+                "Rerun this script using the '--vid' option with the volume id of the volume you want to delete"
+            )
+            print("Matching volumes and ids are:")
+            for mvol in matching_volumes:
+                print("{}: {}".format(vname, mvol))
+            print(
+                "=============================================================================================="
+            )
+
+    return volume_id

@@ -273,59 +273,6 @@ def get_study_volumes(client, study_id):
     return study_volumes
 
 
-# TODO: delete this after everything moves to new functions
-def get_study_and_volumes(client, study_name):
-    """Query all available studies and find study id from name"""
-    study_id = ""
-    study_volumes = []
-    # set up query to get all available studies
-    query = gql(
-        """
-        query {
-            viewer {
-                studyUsers {
-                    edges {
-                        node {
-                            study {
-                                id
-                                name
-                                volumes {
-                                    edges {
-                                        node {
-                                            id
-                                            name
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        """
-    )
-
-    # run query
-    result = client.execute(query)
-
-    # loop through query results, find the study we're looking for and it's volumes
-    for edge in result["viewer"]["studyUsers"]["edges"]:
-        study = edge["node"]["study"]
-        if study["name"] == study_name:
-            study_id = study["id"]
-            if len(study["volumes"]["edges"]) > 0:
-                for volume_edge in study["volumes"]["edges"]:
-                    volume = volume_edge["node"]
-                    vid = volume["id"]
-                    vname = volume["name"]
-                    study_volumes.append(":".join([vname, vid]))
-            else:
-                print("no volumes in study")
-
-    return study_id, study_volumes
-
-
 '''
 def make_cred(client, cred_name, study_id):
     """Get aws credential id from name.

@@ -32,6 +32,12 @@ def parse_args(args):
         default=None,
         required=False,
     )
+    parser.add_argument(
+        "--skip",
+        help="Flag to skip checking if volume is already loaded to study",
+        action="store_true",
+        required=False,
+    )
     # required args
     required_args = parser.add_argument_group("required arguments")
     required_args.add_argument("-s", "--study", help="Study name", required=True)
@@ -48,13 +54,14 @@ def parse_args(args):
     bucket = args.bucket
     aws_cred = args.credential
     billing = args.billing
+    skip = args.skip
 
-    return (prefix, region, study, bucket, aws_cred, billing)
+    return (prefix, region, study, bucket, aws_cred, billing, skip)
 
 
 def main(args):
     """Main, take args, run script."""
-    prefix, region, study_name, bucket, aws_cred, billing = parse_args(args)
+    prefix, region, study_name, bucket, aws_cred, billing, skip = parse_args(args)
 
     endpoint = "https://dewrangle.com/api/graphql"
 
@@ -67,12 +74,18 @@ def main(args):
     client = Client(transport=transport, fetch_schema_from_transport=True)
 
     # convert from names to ids
-
-    study_id, aws_cred_id = qf.get_study_and_cred_id(client, study_name, aws_cred)
+    study_id = qf.get_study_id(client, study_name)
+    aws_cred_id = qf.get_cred_id(client, study_id, aws_cred)
 
     billing_group_id = None
     if billing:
         billing_group_id = qf.get_billing_id(client, study_id, billing)
+
+    # check if volume is already added to study
+    if not skip:
+        volumes = qf.get_study_volumes(client, study_id)
+        if bucket in volumes.values():
+            raise ValueError("Volume {} already loaded to {}.".format(bucket, study_name))
 
     # run create volume mutation
     volume_id = qf.add_volume(client, study_id, prefix, region, bucket, aws_cred_id)

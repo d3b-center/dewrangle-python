@@ -63,6 +63,25 @@ To generate an AWS credential for Dewrangle, go to the Dewrangle page for the st
 Credential Name, AWS Key, and AWS Secret Key. Only the name of the credential needs to be noted and provided to the script.
 
 
+## Create Study
+
+Create a study in an organization. The script will first check if a study is loaded to any other organizations.
+
+```
+python create_study.py -h
+usage: create_study.py [-h] [--run] -s STUDY -o ORG
+
+options:
+  -h, --help            show this help message and exit
+  --run                 Flag to actually run create study mutation
+
+required arguments:
+  -s STUDY, --study STUDY
+                        Study name
+  -o ORG, --org ORG     Organization name
+```
+
+
 ## Download Job Result
 
 After a job is completed, a csv output file is created.

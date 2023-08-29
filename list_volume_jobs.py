@@ -59,7 +59,6 @@ def main(args):
     # convert from names to ids
     study_id = qf.get_study_id(client, study_name)
     volumes = qf.get_study_volumes(client, study_id)
-    print(volumes)
     if name:
         volume_id = qf.process_volumes(study_name, volumes, vname=name)
     else:
@@ -67,20 +66,36 @@ def main(args):
 
     if volume_id is not None:
         jobs = qf.get_volume_jobs(client, volume_id)
-        
-        # print all jobs
-        print("===========================================================================")
-        print("All jobs in volume:")
-        print("JobID|createdAt|Job_Type")
-        for job in jobs:
-            print("{}|{}|{}".format(job, jobs[job]["createdAt"], jobs[job]["operation"]))
 
-        print("===========================================================================")
+        # print all jobs
+        print(
+            "========================================================================================"
+        )
+        print("All jobs in volume:")
+        print("JobID|createdAt|completedAt|Job_Type")
+        for job in jobs:
+            print(
+                "{}|{}|{}".format(
+                    job,
+                    jobs[job]["createdAt"],
+                    jobs[job]["completedAt"],
+                    jobs[job]["operation"],
+                )
+            )
+
+        print(
+            "========================================================================================"
+        )
 
         # get most recent job and print id
         print(
             "Most recent hash job id: {}".format(
                 qf.get_most_recent_job(client, volume_id, "hash")
+            )
+        )
+        print(
+            "Most recent list job id: {}".format(
+                qf.get_most_recent_job(client, volume_id, "list")
             )
         )
 

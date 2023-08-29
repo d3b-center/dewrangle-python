@@ -516,6 +516,7 @@ def get_volume_jobs(client, vid):
                             node {
                                 id
                                 operation
+                                completedAt
                                 createdAt
                             }
                         }
@@ -541,7 +542,8 @@ def get_volume_jobs(client, vid):
                 # convert createdAt from string to datetime object
                 created = datetime.strptime(node["node"]["createdAt"], "%Y-%m-%dT%H:%M:%S.%fZ")
                 op = node["node"]["operation"]
-                jobs[id] = {"operation": op, "createdAt": created}
+                comp = node["node"]["completedAt"]
+                jobs[id] = {"operation": op, "createdAt": created, "completedAt": comp}
 
     return jobs
 
@@ -555,6 +557,8 @@ def get_most_recent_job(client, vid, job_type):
 
     if job_type.upper() in ["HASH", "VOLUME_HASH"]:
         job_type = "VOLUME_HASH"
+    elif job_type.upper() in ["LIST", "VOLUME_LIST"]:
+        job_type = "VOLUME_LIST"
     else:
         raise ValueError("Unsupported job type: {}".format(job_type))
 

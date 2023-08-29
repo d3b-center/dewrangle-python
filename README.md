@@ -29,13 +29,14 @@ api_key = "<<YOUR_KEY>>"
 Add a volume to a study and hash the files in it. By default, the default billing group of the organization is used.
 Before hashing the files in a volume, the files are first listed. Listing and hashing are both run on [Cavatica](cavatica.sbgenomics.com/).
 Two report files are generated one for the list of files and one for file hashes. Currently, these reports must be manually downloaded.
-If a volume / bucket has already been loaded to the study the volume will be added to the study again and will be treated as a separate volume.
-Additionally, if an error occurs at any step in the process, previous steps will not be rolled back.
+If a volume / bucket has already been loaded to the study, the script will fail. If you wish to still add the volume, the `--skip` option
+can be used to reload the volume to the study. However, this will create a new version of the volume and require the other one to be
+deleted separately if desired. Additionally, if an error occurs at any step in the process, previous steps will not be rolled back.
 For example, if an error occurs launching the hash job, the volume will still be loaded to the study.
 
 ```
 python add_and_hash_volume.py -h
-usage: add_and_hash_volume.py [-h] [-p PREFIX] [-r REGION] [-g BILLING] -s STUDY -b BUCKET -c CREDENTIAL
+usage: add_and_hash_volume.py [-h] [-p PREFIX] [-r REGION] [-g BILLING] [--skip] -s STUDY -b BUCKET -c CREDENTIAL
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -45,6 +46,7 @@ optional arguments:
                         Optional, Bucket AWS region code. Default: us-east-1
   -g BILLING, --billing BILLING
                         Optional, billing group name. When not provided, use default billing group for organization
+  --skip                Flag to skip checking if volume is already loaded to study
 
 required arguments:
   -s STUDY, --study STUDY
@@ -59,6 +61,25 @@ required arguments:
 
 To generate an AWS credential for Dewrangle, go to the Dewrangle page for the study, click settings, in the Credentials section click Add Credential, and fill in the
 Credential Name, AWS Key, and AWS Secret Key. Only the name of the credential needs to be noted and provided to the script.
+
+
+## Download Job Result
+
+After a job is completed, a csv output file is created.
+
+```
+python download_job_result.py -h
+usage: download_job_result.py [-h] [-o OUTPUT] -j JOBID
+
+options:
+  -h, --help            show this help message and exit
+  -o OUTPUT, --output OUTPUT
+                        Optional, Output basename. Default: 'job_id'_output
+
+required arguments:
+  -j JOBID, --jobid JOBID
+                        Job ID
+```
 
 ## Remove (Delete) a Volume
 
@@ -82,7 +103,8 @@ required arguments:
 ## List Scripts
 
 The `list_billing_groups.py` and `list_volumes_in_study.py` scripts provided similar functionality. Both scripts list either the billing groups or volumes currently available in
-the provided study.
+the provided study. The `list_volume_jobs.py` script lists the jobs that were run on the volume and also lists the job ids of the most recent hash and list jobs.
+The `list_job_status.py` script lists the job status from a provided job id.
 
 ```
 python list_billing_groups.py -h

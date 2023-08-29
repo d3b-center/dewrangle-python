@@ -48,6 +48,48 @@ def add_volume(client, study_id, prefix, region, bucket, aws_cred):
     return volume_id
 
 
+def create_study(client, study_name, org_id, run):
+    """Run Dewrangle create study mutation."""
+    
+    study_id = None
+
+    # prepare mutation
+    mutation = gql(
+        """
+        mutation StudyCreateMutation($input: StudyCreateInput!) {
+            studyCreate(input: $input) {
+                errors {
+                    ... on MutationError {
+                        message
+                        field
+                    }
+                }
+                study {
+                    name
+                    id
+                }    
+            }
+        }
+        """
+    )
+
+    params = {
+        "input": {
+            "name": study_name,
+            "organizationId": org_id,
+        }
+    }
+
+    # check if run is given and run mutation
+    if run:
+        result = client.execute(mutation, variable_values=params)
+        study_id = result["studyCreate"]["study"]["id"]
+    else:
+        print("{} was not created. Run option was not provided.".format(study_name))
+
+    return study_id
+
+
 def list_volume(client, volume_id):
     """Run Dewrangle list volume mutation."""
 
@@ -174,8 +216,94 @@ def get_cred_id(client, study_id, cred_name):
     return cred_id
 
 
+def get_org_id(client, org_name):
+    """Query all available organizations, return org id"""
+
+    org_id = ""
+    org_ids = []
+    # set up query to get all available studies
+    query = gql(
+        """
+        query {
+            viewer {
+                organizationUsers {
+                    edges {
+                        node {
+                            organization {
+                                id
+                                name
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        """
+    )
+
+    # run query
+    result = client.execute(query)
+
+    # loop through query results, find the study we're looking for and it's volumes
+    for edge in result["viewer"]["organizationUsers"]["edges"]:
+        org = edge["node"]["organization"]
+        if org["name"] == org_name:
+            org_ids.append(org["id"])
+
+    if len(org_ids) == 1:
+        org_id = org_ids[0]
+    elif len(org_ids) == 0:
+        raise ValueError("Organization {} not found".format(org_name))
+    else:
+        raise ValueError(
+            "Organization {} found multiple times. Please delete or rename studies so there is only one {}".format(
+                org_name, org_name
+            )
+        )
+
+    return org_id
+
+
+def get_all_studies(client):
+    """Query all available studies, return study ids and names"""
+
+    studies = {}
+
+    # set up query to get all available studies
+    query = gql(
+        """
+        query {
+            viewer {
+                studyUsers {
+                    edges {
+                        node {
+                            study {
+                                id
+                                name
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        """
+    )
+
+    # run query
+    result = client.execute(query)
+
+    # loop through query results, find the study we're looking for and it's volumes
+    for edge in result["viewer"]["studyUsers"]["edges"]:
+        study = edge["node"]["study"]
+        id = study["id"]
+        name = study["name"]
+        studies[id] = name
+
+    return studies
+
+
 def get_study_id(client, study_name):
-    """Query all available studies, find study id, and get a list of volumes"""
+    """Query all available studies, return study id"""
 
     # this function could be split into two get_studies and get_study_id and separate the query
     # from checking the study name like how get_study_billing_groups and get_billing_id work
@@ -226,7 +354,7 @@ def get_study_id(client, study_name):
 
 
 def get_study_volumes(client, study_id):
-    """Query all available studies and find study id from name"""
+    """Query all available studies, find study id, and return volumes in that study"""
     study_volumes = {}
     # set up query to get all available studies
     query = gql(

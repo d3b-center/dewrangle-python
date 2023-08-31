@@ -1,6 +1,7 @@
-"""Hash files in a volume."""
+"""Script to delete volume from a study."""
 import sys
 import argparse
+import re
 from gql import gql, Client
 from gql.transport.aiohttp import AIOHTTPTransport
 import credential
@@ -64,7 +65,39 @@ def main(args):
         volume_id = qf.process_volumes(study_name, volumes, vid=vid)
 
     if volume_id is not None:
-        qf.list_and_hash_volume(client, volume_id)
+        jobs = qf.get_volume_jobs(client, volume_id)
+
+        # print all jobs
+        print(
+            "========================================================================================"
+        )
+        print("All jobs in volume:")
+        print("JobID|createdAt|completedAt|Job_Type")
+        for job in jobs:
+            print(
+                "{}|{}|{}".format(
+                    job,
+                    jobs[job]["createdAt"],
+                    jobs[job]["completedAt"],
+                    jobs[job]["operation"],
+                )
+            )
+
+        print(
+            "========================================================================================"
+        )
+
+        # get most recent job and print id
+        print(
+            "Most recent hash job id: {}".format(
+                qf.get_most_recent_job(client, volume_id, "hash")
+            )
+        )
+        print(
+            "Most recent list job id: {}".format(
+                qf.get_most_recent_job(client, volume_id, "list")
+            )
+        )
 
     print("Done!")
 

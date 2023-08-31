@@ -1,7 +1,6 @@
 """List files in a volume."""
 import sys
 import argparse
-import re
 from gql import gql, Client
 from gql.transport.aiohttp import AIOHTTPTransport
 import credential

@@ -95,9 +95,15 @@ def main(args):
     # run hash mutation
     workflow_id = qf.list_and_hash_volume(client, volume_id, billing_group_id)
 
-    print("Hashing job id: {}".format(workflow_id))
+    print("Hashing workflow id: {}".format(workflow_id))
 
-    # TODO: verify hash jobs launched? (spit out Cavatica api call????)
+    '''
+    Removing this for now since the job doesn't get created immediately
+    # get job id from volume
+    jobid = qf.get_most_recent_job(client, volume_id, "hash")
+
+    print("Hashing job id: {}".format(jobid))
+    '''
 
     # clean up and finish
     print("Volume(s) successfully added and is being hashed.")

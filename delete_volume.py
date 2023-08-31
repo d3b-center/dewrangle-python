@@ -64,45 +64,15 @@ def main(args):
     client = Client(transport=transport, fetch_schema_from_transport=True)
 
     # convert from names to ids
-    volumes = qf.get_study_and_volumes(client, study_name)[1]
-
-    if vid:
-        search_vid = re.compile(":" + re.escape(vid) + "$")
-        if len(list(filter(search_vid.search, volumes))) == 1:
-            # call deletion function
-            qf.remove_volume_from_study(client, vid, run)
-        else:
-            raise ValueError(
-                "Something went wrong, volume id either not present in study or appears multiple times. Ensure you are providing the whole volume id."
-            )
+    study_id = qf.get_study_id(client, study_name)
+    volumes = qf.get_study_volumes(client, study_id)
+    if name:
+        volume_id = qf.process_volumes(study_name, volumes, vname=name)
     else:
-        # see how many times the volume was added to the study
-        search_name = re.compile(
-            "^" + re.escape(name) + ":"
-        )  # add : to make sure we get the full volume name
-        matching_volumes = list(filter(search_name.search, volumes))
-        count = len(matching_volumes)
+        volume_id = qf.process_volumes(study_name, volumes, vid=vid)
 
-        if count == 0:
-            print("{} volume not found in {}".format(name, study_name))
-        elif count == 1:
-            # extract volume id from matching_volumes[0]
-            volume_id = matching_volumes[0].split(":")[1]
-            # call deletion function
-            qf.remove_volume_from_study(client, volume_id, run)
-        else:
-            print(
-                "=============================================================================================="
-            )
-            print("Multiple volumes named {} found in {}".format(name, study_name))
-            print(
-                "Rerun this script using the '--vid' option with the volume id of the volume you want to delete"
-            )
-            print("Matching volumes and ids are:")
-            print("\n".join(map(str, matching_volumes)))
-            print(
-                "=============================================================================================="
-            )
+    if volume_id is not None:
+        qf.remove_volume_from_study(client, volume_id, run)
 
     # TODO: maybe delete all volume with name if -a option given???
 

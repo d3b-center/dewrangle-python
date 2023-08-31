@@ -39,14 +39,16 @@ def main(args):
     client = Client(transport=transport, fetch_schema_from_transport=True)
 
     # convert from names to ids
-    volumes = qf.get_study_and_volumes(client, study_name)[1]
-
-    print(volumes)
+    study_id = qf.get_study_id(client, study_name)
+    volumes = qf.get_study_volumes(client, study_id)
 
     print(
         "====================================================================================="
     )
-    print("\n".join(map(str, volumes)))
+    print("Volumes attached to study:")
+    for vol in volumes:
+        print("{}: {}".format(volumes[vol], vol))
+
     print(
         "====================================================================================="
     )

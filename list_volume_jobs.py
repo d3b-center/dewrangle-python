@@ -24,12 +24,6 @@ def parse_args(args):
         default=None,
         required=False,
     )
-    parser.add_argument(
-        "--run",
-        help="Flag to actually run deletion mutations",
-        action="store_true",
-        required=False,
-    )
     # required args
     required_args = parser.add_argument_group("required arguments")
     required_args.add_argument("-s", "--study", help="Study name", required=True)
@@ -39,14 +33,13 @@ def parse_args(args):
     study = args.study
     name = args.volume
     vid = args.vid
-    run = args.run
 
-    return (study, name, vid, run)
+    return (study, name, vid)
 
 
 def main(args):
     """Main, take args, run script."""
-    study_name, name, vid, run = parse_args(args)
+    study_name, name, vid = parse_args(args)
 
     # check for either vid or name
     if not (name or vid):
@@ -72,9 +65,39 @@ def main(args):
         volume_id = qf.process_volumes(study_name, volumes, vid=vid)
 
     if volume_id is not None:
-        qf.remove_volume_from_study(client, volume_id, run)
+        jobs = qf.get_volume_jobs(client, volume_id)
 
-    # TODO: maybe delete all volume with name if -a option given???
+        # print all jobs
+        print(
+            "========================================================================================"
+        )
+        print("All jobs in volume:")
+        print("JobID|createdAt|completedAt|Job_Type")
+        for job in jobs:
+            print(
+                "{}|{}|{}".format(
+                    job,
+                    jobs[job]["createdAt"],
+                    jobs[job]["completedAt"],
+                    jobs[job]["operation"],
+                )
+            )
+
+        print(
+            "========================================================================================"
+        )
+
+        # get most recent job and print id
+        print(
+            "Most recent hash job id: {}".format(
+                qf.get_most_recent_job(client, volume_id, "hash")
+            )
+        )
+        print(
+            "Most recent list job id: {}".format(
+                qf.get_most_recent_job(client, volume_id, "list")
+            )
+        )
 
     print("Done!")
 

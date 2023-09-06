@@ -1,4 +1,4 @@
-"""List volumes in a study."""
+"""List job status."""
 import sys
 import argparse
 from gql import gql, Client
@@ -13,18 +13,18 @@ def parse_args(args):
     parser = argparse.ArgumentParser()
     # required args
     required_args = parser.add_argument_group("required arguments")
-    required_args.add_argument("-s", "--study", help="Study name", required=True)
+    required_args.add_argument("-j", "--jobid", help="Job ID", required=True)
 
     # parse and return arguments
     args = parser.parse_args()
-    study = args.study
+    job = args.jobid
 
-    return study
+    return job
 
 
 def main(args):
     """Main, take args, run script."""
-    study_name = parse_args(args)
+    job = parse_args(args)
 
     # set up api and authentication
     endpoint = "https://dewrangle.com/api/graphql"
@@ -37,20 +37,13 @@ def main(args):
     )
     client = Client(transport=transport, fetch_schema_from_transport=True)
 
-    # convert from names to ids
-    study_id = qf.get_study_id(client, study_name)
-    volumes = qf.get_study_volumes(client, study_id)
+    # query job
+    job_res = qf.get_job_info(client, job)
 
-    print(
-        "====================================================================================="
-    )
-    print("Volumes attached to study:")
-    for vol in volumes:
-        print("{}: {}".format(volumes[vol], vol))
+    print(job_res)
 
-    print(
-        "====================================================================================="
-    )
+    if job_res["job"]["completedAt"] != "":
+        print("Job Completed!")
 
     print("Done!")
 

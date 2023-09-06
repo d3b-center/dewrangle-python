@@ -701,3 +701,63 @@ def get_most_recent_job(client, vid, job_type):
         raise ValueError("no job(s) matching job type: {} found in volume".format(job_type))
 
     return jid
+
+
+def get_volumes_admin_info(client):
+    """
+    Query dewrangle for all volumes and studies
+    Get volume name, id, prefix, and credential
+    Get study users and roles
+    """
+
+    volumes = {}
+
+    # set up query to get all available studies
+    query = gql(
+        """
+        query {
+            viewer {
+                studyUsers {
+                edges {
+                    node {
+                    study {
+                        id
+                        name
+                        volumes {
+                        edges {
+                            node {
+                            name
+                            pathPrefix
+                            credential {
+                                id
+                                name
+                            }
+                            }
+                        }
+                        }
+                        studyUsers {
+                        edges {
+                            node {
+                            id
+                            role
+                            user {
+                                name
+                            }
+                            }
+                        }
+                        }
+                    }
+                    }
+                }
+                }
+            }
+        }
+        """
+    )
+
+    # run query
+    result = client.execute(query)
+
+    print(result)
+
+    return volumes

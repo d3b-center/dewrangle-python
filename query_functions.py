@@ -718,37 +718,37 @@ def get_volumes_admin_info(client):
         query {
             viewer {
                 studyUsers {
-                edges {
-                    node {
-                    study {
-                        id
-                        name
-                        volumes {
-                        edges {
-                            node {
-                            name
-                            pathPrefix
-                            credential {
+                    edges {
+                        node {
+                            study {
                                 id
                                 name
+                                volumes {
+                                    edges {
+                                        node {
+                                            name
+                                            pathPrefix
+                                            credential {
+                                                id
+                                                name
+                                            }
+                                        }
+                                    }
+                                }
+                                studyUsers {
+                                    edges {
+                                        node {
+                                            id
+                                            role
+                                            user {
+                                                name
+                                            }
+                                        }
+                                    }
+                                }
                             }
-                            }
-                        }
-                        }
-                        studyUsers {
-                        edges {
-                            node {
-                            id
-                            role
-                            user {
-                                name
-                            }
-                            }
-                        }
                         }
                     }
-                    }
-                }
                 }
             }
         }

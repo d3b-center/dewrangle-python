@@ -104,9 +104,9 @@ def list_volume(client, volume_id):
                         field
                     }
                 }
-                temporalWorkflow {
-                    workflowId
-                }    
+                job {
+                    id
+                }
             }
         }
         """
@@ -118,9 +118,9 @@ def list_volume(client, volume_id):
     result = client.execute(mutation, variable_values=params)
 
     # check result
-    workflow_id = result["volumeList"]["temporalWorkflow"]["workflowId"]
+    job_id = result["volumeList"]["temporalWorkflow"]["workflowId"]
 
-    return workflow_id
+    return job_id
 
 
 def list_and_hash_volume(client, volume_id, billing_id=None):
@@ -137,8 +137,8 @@ def list_and_hash_volume(client, volume_id, billing_id=None):
                         field
                     }
                 }
-                temporalWorkflow {
-                    workflowId
+                job {
+                    id
                 }    
             }
         }
@@ -154,9 +154,9 @@ def list_and_hash_volume(client, volume_id, billing_id=None):
     result = client.execute(mutation, variable_values=params)
 
     # check result
-    workflow_id = result["volumeListAndHash"]["temporalWorkflow"]["workflowId"]
+    job_id = result["volumeListAndHash"]["job"]["id"]
 
-    return workflow_id
+    return job_id
 
 
 def get_cred_id(client, study_id, cred_name):
@@ -613,6 +613,36 @@ def get_job_info(client, jobid):
                     operation
                     createdAt
                     completedAt
+                    billingGroup {
+                        name
+                    }
+                    cost {
+                        cents
+                    }
+                    parentJob {
+                        id
+                        operation
+                        createdAt
+                        completedAt
+                        billingGroup {
+                            name
+                        }
+                        cost {
+                            cents
+                        }
+                    }
+                    children {
+                        id
+                        operation
+                        createdAt
+                        completedAt
+                        billingGroup {
+                            name
+                        }
+                        cost {
+                            cents
+                        }
+                    }
                 }
             }
         }

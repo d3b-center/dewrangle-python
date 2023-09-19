@@ -42,7 +42,7 @@ def main(args):
 
     print(job_res)
 
-    if job_res["job"]["completedAt"] != "":
+    if job_res["job"]["completedAt"] != "" and job_res["job"]["completedAt"] is not None:
         print("Job Completed!")
 
     print("Done!")

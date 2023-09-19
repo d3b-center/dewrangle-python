@@ -64,7 +64,8 @@ def main(args):
         volume_id = qf.process_volumes(study_name, volumes, vid=vid)
 
     if volume_id is not None:
-        qf.list_volume(client, volume_id)
+        job_id = qf.list_volume(client, volume_id)
+        print("List job id: {}".format(job_id))
 
     print("Done!")
 

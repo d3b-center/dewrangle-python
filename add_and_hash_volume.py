@@ -93,9 +93,9 @@ def main(args):
     print("Volume id: {}".format(volume_id))
 
     # run hash mutation
-    workflow_id = qf.list_and_hash_volume(client, volume_id, billing_group_id)
+    job_id = qf.list_and_hash_volume(client, volume_id, billing_group_id)
 
-    print("Hashing workflow id: {}".format(workflow_id))
+    print("List and Hash job id: {}".format(job_id))
 
     '''
     Removing this for now since the job doesn't get created immediately

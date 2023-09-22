@@ -507,72 +507,8 @@ def remove_volume_from_study(client, vid, run):
     return
 
 
-def get_study_billing_groups_deprecated(client, study_id):
-    """Get available billing groups for a study."""
-
-    billing_groups = {}
-
-    # query all organizations, studies, and billing groups the user has access to.
-    # set up query to get all available studies
-    query = gql(
-        """
-        query {
-            viewer {
-                organizationUsers {
-                    edges {
-                        node {
-                            organization {
-                                id
-                                name
-                                billingGroups {
-                                    edges {
-                                        node {
-                                            id
-                                            name
-                                        }
-                                    }
-                                }
-                                studies{
-                                    edges {
-                                        node {
-                                            id
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        """
-    )
-
-    # run query
-    result = client.execute(query)
-
-    org_count = 0
-    # find organization the study is in, find billing groups, and format output
-    for org in result["viewer"]["organizationUsers"]["edges"]:
-        for study in org["node"]["organization"]["studies"]["edges"]:
-            if study_id == study["node"]["id"]:
-                org_count += 1
-                # get billing group from org and format similarly
-                for node in org["node"]["organization"]["billingGroups"]["edges"]:
-                    bid = node["node"]["id"]
-                    bname = node["node"]["name"]
-                    billing_groups[bid] = bname
-
-    if org_count > 1:
-        raise ValueError("Study {} found in multiple organizations.".format(study_id))
-
-    print(billing_groups)
-
-    return billing_groups
-
-
-def get_study_billing_groups(client, org_id):
-    """Get available billing groups for a study."""
+def get_billing_groups(client, org_id):
+    """Get available billing groups for an organization."""
 
     billing_groups = {}
 
@@ -616,7 +552,7 @@ def get_billing_id(client, org_id, billing):
     "Get billing group id. If a name is provided, check it exists. If not return org default."
 
     # first get a list of organizations and billing groups
-    billing_groups = get_study_billing_groups(client, org_id)
+    billing_groups = get_billing_groups(client, org_id)
 
     billing_id = None
 

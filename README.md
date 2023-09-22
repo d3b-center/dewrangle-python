@@ -36,9 +36,9 @@ For example, if an error occurs launching the hash job, the volume will still be
 
 ```
 python add_and_hash_volume.py -h
-usage: add_and_hash_volume.py [-h] [-p PREFIX] [-r REGION] [-g BILLING] [--skip] -s STUDY -b BUCKET -c CREDENTIAL
+usage: add_and_hash_volume.py [-h] [-p PREFIX] [-r REGION] [-g BILLING] [--skip] [-c CREDENTIAL] -s STUDY -b BUCKET
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -p PREFIX, --prefix PREFIX
                         Optional, Path prefix. Default: None
@@ -47,14 +47,14 @@ optional arguments:
   -g BILLING, --billing BILLING
                         Optional, billing group name. When not provided, use default billing group for organization
   --skip                Flag to skip checking if volume is already loaded to study
+  -c CREDENTIAL, --credential CREDENTIAL
+                        Dewrangle AWS credential name. Default, try to find available credential.
 
 required arguments:
   -s STUDY, --study STUDY
                         Study name
   -b BUCKET, --bucket BUCKET
-                        Bucket name
-  -c CREDENTIAL, --credential CREDENTIAL
-                        Dewrangle AWS credential name
+                        Bucket nam
 ```
 
 ### AWS Credential
@@ -139,7 +139,8 @@ required arguments:
 
 ## List Scripts
 
-The `list_billing_groups.py` and `list_volumes_in_study.py` scripts provided similar functionality. Both scripts list either the billing groups or volumes currently available in
+The `list_billing_groups.py`, `list_volumes_in_study.py`, and `list_credentials.py` scripts provided similar functionality. These scripts list the billing groups, volumes,
+or credentials currently available in
 the provided study. The `list_volume_jobs.py` script lists the jobs that were run on the volume and also lists the job ids of the most recent hash and list jobs.
 The `list_job_status.py` script lists the job status from a provided job id.
 

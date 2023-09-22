@@ -165,8 +165,31 @@ def get_cred_id(client, study_id, cred_name):
     # get all credentials in study
     credentials = get_study_credentials(client, study_id)
 
+    for cred in credentials:
+        if cred_name == credentials[cred]["name"]:
+            cred_id = cred
+
+    message = ""
+
+    if len(credentials) == 1:
+        ((cred_id, info),) = credentials.items()
+        print("Only one credential available: {}".format(info["name"]))
+        cred_id = list(credentials.keys())[0]
+    elif cred_name:
+        for cred in credentials:
+            if cred_name == credentials[cred]["name"]:
+                cred_id = cred
+        if cred_id is None:
+            message = "{} credential not found in study".format(cred_name)
+    elif len(credentials) == 0:
+        message = "No credentials in study."
+    else:
+        message = "Multiple credentials found in study but none provided. Please run again and provide one of the following crdentials ids:{}{}".format(
+            "\n", credentials
+        )
+
     if cred_id is None:
-        print("{} credential not found in study".format(cred_name))
+        raise ValueError(message)
 
     return cred_id
 
@@ -363,7 +386,7 @@ def get_study_id(client, study_name):
     # run query
     result = client.execute(query)
 
-    print(result)
+    # print(result)
 
     # loop through query results, find the study we're looking for and it's volumes
     for edge in result["viewer"]["studyUsers"]["edges"]:

@@ -38,13 +38,16 @@ def parse_args(args):
         action="store_true",
         required=False,
     )
+    parser.add_argument(
+        "-c",
+        "--credential",
+        help="Dewrangle AWS credential name. Default, try to find available credential.",
+        required=False,
+    )
     # required args
     required_args = parser.add_argument_group("required arguments")
     required_args.add_argument("-s", "--study", help="Study name", required=True)
     required_args.add_argument("-b", "--bucket", help="Bucket name", required=True)
-    required_args.add_argument(
-        "-c", "--credential", help="Dewrangle AWS credential name", required=True
-    )
 
     # parse and return arguments
     args = parser.parse_args()
@@ -83,7 +86,9 @@ def main(args):
     if not skip:
         volumes = qf.get_study_volumes(client, study_id)
         if bucket in volumes.values():
-            raise ValueError("Volume {} already loaded to {}.".format(bucket, study_name))
+            raise ValueError(
+                "Volume {} already loaded to {}.".format(bucket, study_name)
+            )
 
     # run create volume mutation
     volume_id = qf.add_volume(client, study_id, prefix, region, bucket, aws_cred_id)
@@ -95,13 +100,13 @@ def main(args):
 
     print("List and Hash job id: {}".format(job_id))
 
-    '''
+    """
     Removing this for now since the job doesn't get created immediately
     # get job id from volume
     jobid = qf.get_most_recent_job(client, volume_id, "hash")
 
     print("Hashing job id: {}".format(jobid))
-    '''
+    """
 
     # clean up and finish
     print("Volume(s) successfully added and is being hashed.")

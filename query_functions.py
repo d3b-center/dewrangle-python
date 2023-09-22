@@ -50,7 +50,7 @@ def add_volume(client, study_id, prefix, region, bucket, aws_cred):
 
 def create_study(client, study_name, org_id, run):
     """Run Dewrangle create study mutation."""
-    
+
     study_id = None
 
     # prepare mutation
@@ -123,13 +123,13 @@ def list_volume(client, volume_id):
     return job_id
 
 
-def list_and_hash_volume(client, volume_id, billing_id=None):
+def list_and_hash_volume(client, volume_id, billing_id):
     """Run Dewrangle list and hash volume mutation."""
 
     # prepare mutation
     mutation = gql(
         """
-        mutation VolumeListHashMutation($id: ID!, $input: VolumeListAndHashInput) {
+        mutation VolumeListHashMutation($id: ID!, $input: VolumeListAndHashInput!) {
             volumeListAndHash(id: $id, input: $input) {
                 errors {
                     ... on MutationError {
@@ -146,9 +146,7 @@ def list_and_hash_volume(client, volume_id, billing_id=None):
     )
 
     params = {"id": volume_id}
-
-    if billing_id is not None:
-        params["input"] = {"billingGroupId": billing_id}
+    params["input"] = {"billingGroupId": billing_id}
 
     # run mutation
     result = client.execute(mutation, variable_values=params)
@@ -260,6 +258,35 @@ def get_org_id(client, org_name):
                 org_name, org_name
             )
         )
+
+    return org_id
+
+
+def get_org_id_from_study(client, study_id):
+    """Query study id and get the id of the organization it's in"""
+
+    org_id = ""
+    # set up query to get all available studies
+    query = gql(
+        """
+        query Study_Query($id: ID!) {
+            study: node(id: $id) {
+                ... on Study {
+                    organization {
+                        id
+                    }
+                }
+            }
+        }
+        """
+    )
+
+    params = {"id": study_id}
+
+    # run query
+    result = client.execute(query, params)
+
+    org_id = result["study"]["organization"]["id"]
 
     return org_id
 
@@ -480,7 +507,7 @@ def remove_volume_from_study(client, vid, run):
     return
 
 
-def get_study_billing_groups(client, study_id):
+def get_study_billing_groups_deprecated(client, study_id):
     """Get available billing groups for a study."""
 
     billing_groups = {}
@@ -539,19 +566,64 @@ def get_study_billing_groups(client, study_id):
     if org_count > 1:
         raise ValueError("Study {} found in multiple organizations.".format(study_id))
 
+    print(billing_groups)
+
     return billing_groups
 
 
-def get_billing_id(client, study_id, billing):
-    "Get billing group id from billing group name."
+def get_study_billing_groups(client, org_id):
+    """Get available billing groups for a study."""
+
+    billing_groups = {}
+
+    # query all organizations, studies, and billing groups the user has access to.
+    # set up query to get all available studies
+    query = gql(
+        """
+        query Org_Query($id: ID!) {
+            organization: node(id: $id) {
+                ... on Organization {
+                    billingGroups {
+                        edges {
+                            node {
+                                name
+                                id
+                                default            
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        """
+    )
+
+    params = {"id": org_id}
+
+    # run query
+    result = client.execute(query, params)
+
+    for bg in result["organization"]["billingGroups"]["edges"]:
+        name = bg["node"]["name"]
+        id = bg["node"]["id"]
+        default = bg["node"]["default"]
+        billing_groups[id] = {"name": name, "default": default}
+
+    return billing_groups
+
+
+def get_billing_id(client, org_id, billing):
+    "Get billing group id. If a name is provided, check it exists. If not return org default."
 
     # first get a list of organizations and billing groups
-    billing_group_list = get_study_billing_groups(client, study_id)
+    billing_groups = get_study_billing_groups(client, org_id)
 
     billing_id = None
 
-    for bg in billing_group_list:
-        if billing == bg:
+    for bg in billing_groups:
+        if billing and billing == billing_groups[bg]["name"]:
+            billing_id = bg
+        elif billing_groups[bg]["default"]:
             billing_id = bg
 
     if billing_id is None:
@@ -649,9 +721,7 @@ def get_job_info(client, jobid):
         """
     )
 
-    params = {
-        "id": jobid
-    }
+    params = {"id": jobid}
 
     # run query
     result = client.execute(query, variable_values=params)
@@ -685,9 +755,7 @@ def get_volume_jobs(client, vid):
         """
     )
 
-    params = {
-        "id": vid
-    }
+    params = {"id": vid}
 
     # run query
     result = client.execute(query, variable_values=params)
@@ -698,7 +766,9 @@ def get_volume_jobs(client, vid):
             for node in result[vol]["jobs"][job]:
                 id = node["node"]["id"]
                 # convert createdAt from string to datetime object
-                created = datetime.strptime(node["node"]["createdAt"], "%Y-%m-%dT%H:%M:%S.%fZ")
+                created = datetime.strptime(
+                    node["node"]["createdAt"], "%Y-%m-%dT%H:%M:%S.%fZ"
+                )
                 op = node["node"]["operation"]
                 comp = node["node"]["completedAt"]
                 jobs[id] = {"operation": op, "createdAt": created, "completedAt": comp}
@@ -728,6 +798,8 @@ def get_most_recent_job(client, vid, job_type):
                 jid = job
 
     if jid is None:
-        raise ValueError("no job(s) matching job type: {} found in volume".format(job_type))
+        raise ValueError(
+            "no job(s) matching job type: {} found in volume".format(job_type)
+        )
 
     return jid

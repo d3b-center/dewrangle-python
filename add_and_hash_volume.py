@@ -76,10 +76,8 @@ def main(args):
     # convert from names to ids
     study_id = qf.get_study_id(client, study_name)
     aws_cred_id = qf.get_cred_id(client, study_id, aws_cred)
-
-    billing_group_id = None
-    if billing:
-        billing_group_id = qf.get_billing_id(client, study_id, billing)
+    org_id = qf.get_org_id_from_study(client, study_id)
+    billing_group_id = qf.get_billing_id(client, org_id, billing)
 
     # check if volume is already added to study
     if not skip:

@@ -23,6 +23,13 @@ def parse_args(args):
         default=None,
         required=False,
     )
+    parser.add_argument(
+        "-g",
+        "--billing",
+        help="Optional, billing group name. When not provided, use default billing group for organization",
+        default=None,
+        required=False,
+    )
     # required args
     required_args = parser.add_argument_group("required arguments")
     required_args.add_argument("-s", "--study", help="Study name", required=True)
@@ -32,13 +39,14 @@ def parse_args(args):
     study = args.study
     name = args.volume
     vid = args.vid
+    billing = args.billing
 
-    return (study, name, vid)
+    return (study, name, vid, billing)
 
 
 def main(args):
     """Main, take args, run script."""
-    study_name, name, vid = parse_args(args)
+    study_name, name, vid, billing = parse_args(args)
 
     # check for either vid or name
     if not (name or vid):
@@ -57,14 +65,17 @@ def main(args):
 
     # convert from names to ids
     study_id = qf.get_study_id(client, study_name)
+    org_id = qf.get_org_id_from_study(client, study_id)
+    billing_id = qf.get_billing_id(client, org_id, billing)
     volumes = qf.get_study_volumes(client, study_id)
+
     if name:
         volume_id = qf.process_volumes(study_name, volumes, vname=name)
     else:
         volume_id = qf.process_volumes(study_name, volumes, vid=vid)
 
     if volume_id is not None:
-        job_id = qf.list_and_hash_volume(client, volume_id)
+        job_id = qf.list_and_hash_volume(client, volume_id, billing_id)
         print("Hash job id: {}".format(job_id))
 
     print("Done!")

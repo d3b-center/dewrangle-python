@@ -158,29 +158,39 @@ def list_and_hash_volume(client, volume_id, billing_id):
 
 
 def get_cred_id(client, study_id, cred_name):
+    """Get credential id"""
+
+    cred_id = None
+
+    # get all credentials in study
+    credentials = get_study_credentials(client, study_id)
+
+    if cred_id is None:
+        print("{} credential not found in study".format(cred_name))
+
+    return cred_id
+
+
+def get_study_credentials(client, study_id):
     """Get credential ids from a study."""
 
     # query all studies and credentials the user has access to.
     # in the future, this should be a simpler query to get study id from study name
-    cred_id = None
-    # set up query to get all available studies
+    credentials = {}
+
+    # set up query to get all credentials in the study
     query = gql(
         """
-        query {
-            viewer {
-                studyUsers {
-                    edges {
-                        node {
-                            study {
+        query Study_Query($id: ID!) {
+            study: node(id: $id) {
+                id
+                ... on Study {
+                    credentials {
+                        edges {
+                            node {
                                 id
-                                credentials {
-                                    edges {
-                                        node {
-                                            id
-                                            name
-                                        }
-                                    }
-                                }
+                                name
+                                key
                             }
                         }
                     }
@@ -190,28 +200,21 @@ def get_cred_id(client, study_id, cred_name):
         """
     )
 
+    params = {"id": study_id}
+
     # run query
-    result = client.execute(query)
+    result = client.execute(query, variable_values=params)
 
     # loop through query results, find the study we're looking for and it's volumes
-    for edge in result["viewer"]["studyUsers"]["edges"]:
-        study = edge["node"]["study"]
-        if study["id"] == study_id:
-            if len(study["credentials"]["edges"]) > 0:
-                # check credential name
-                for cred_edge in study["credentials"]["edges"]:
-                    cred = cred_edge["node"]
-                    cid = cred["id"]
-                    cname = cred["name"]
-                    if cname == cred_name:
-                        cred_id = cid
-            else:
-                print("no credentials in study")
+    for study in result:
+        for cred_edge in result[study]["credentials"]["edges"]:
+            cred = cred_edge["node"]
+            cid = cred["id"]
+            name = cred["name"]
+            key = cred["key"]
+            credentials[cid] = {"name": name, "key": key}
 
-    if cred_id is None:
-        print("{} credential not found in study".format(cred_name))
-
-    return cred_id
+    return credentials
 
 
 def get_org_id(client, org_name):
@@ -359,6 +362,8 @@ def get_study_id(client, study_name):
 
     # run query
     result = client.execute(query)
+
+    print(result)
 
     # loop through query results, find the study we're looking for and it's volumes
     for edge in result["viewer"]["studyUsers"]["edges"]:

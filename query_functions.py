@@ -366,41 +366,16 @@ def get_all_studies(client):
 def get_study_id(client, study_name):
     """Query all available studies, return study id"""
 
-    # this function could be split into two get_studies and get_study_id and separate the query
-    # from checking the study name like how get_study_billing_groups and get_billing_id work
-
     study_id = ""
     study_ids = []
-    # set up query to get all available studies
-    query = gql(
-        """
-        query {
-            viewer {
-                studyUsers {
-                    edges {
-                        node {
-                            study {
-                                id
-                                name
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        """
-    )
 
-    # run query
-    result = client.execute(query)
-
-    # print(result)
+    # get a dictionary of all study ids and names
+    studies = get_all_studies(client)
 
     # loop through query results, find the study we're looking for and it's volumes
-    for edge in result["viewer"]["studyUsers"]["edges"]:
-        study = edge["node"]["study"]
-        if study["name"] == study_name:
-            study_ids.append(study["id"])
+    for study in studies:
+        if studies[study] == study_name:
+            study_ids.append(study)
 
     if len(study_ids) == 1:
         study_id = study_ids[0]

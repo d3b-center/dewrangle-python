@@ -17,6 +17,12 @@ def parse_args(args):
         action="store_true",
         required=False,
     )
+    parser.add_argument(
+        "--skip",
+        help="Flag to skip checking if study already exists",
+        action="store_true",
+        required=False,
+    )
     # required args
     required_args = parser.add_argument_group("required arguments")
     required_args.add_argument("-s", "--study", help="Study name", required=True)
@@ -27,7 +33,7 @@ def parse_args(args):
     study = args.study
     org = args.org
     run = args.run
-    skip = None # not sure if I want to include this option
+    skip = args.skip
 
     return (study, org, run, skip)
 

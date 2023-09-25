@@ -417,26 +417,19 @@ def get_study_id(client, study_name):
 
 
 def get_study_volumes(client, study_id):
-    """Query all available studies, find study id, and return volumes in that study"""
+    """Query study id, and return volumes in that study"""
     study_volumes = {}
     # set up query to get all available studies
     query = gql(
         """
-        query {
-            viewer {
-                studyUsers {
-                    edges {
-                        node {
-                            study {
+        query Study_Query($id: ID!) {
+            study: node(id: $id) {
+                ... on Study {
+                    volumes {
+                        edges {
+                            node {
                                 id
-                                volumes {
-                                    edges {
-                                        node {
-                                            id
-                                            name
-                                        }
-                                    }
-                                }
+                                name
                             }
                         }
                     }
@@ -446,21 +439,17 @@ def get_study_volumes(client, study_id):
         """
     )
 
-    # run query
-    result = client.execute(query)
+    params = {"id": study_id}
 
-    # loop through query results, find the study we're looking for and it's volumes
-    for edge in result["viewer"]["studyUsers"]["edges"]:
-        study = edge["node"]["study"]
-        if study["id"] == study_id:
-            if len(study["volumes"]["edges"]) > 0:
-                for volume_edge in study["volumes"]["edges"]:
-                    # get volume from study and format as dict
-                    vid = volume_edge["node"]["id"]
-                    vname = volume_edge["node"]["name"]
-                    study_volumes[vid] = vname
-            else:
-                raise ValueError("No volumes in study.")
+    # run query
+    result = client.execute(query, params)
+
+    for study in result:
+        for volume_edge in result["study"]["volumes"]["edges"]:
+            volume = volume_edge["node"]
+            vid = volume["id"]
+            vname = volume["name"]
+            study_volumes[vid] = vname
 
     return study_volumes
 

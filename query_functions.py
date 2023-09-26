@@ -3,6 +3,17 @@ from gql import gql
 from datetime import datetime
 
 
+def check_mutation_result(result):
+    """Check the result of a mutation and handle error(s)"""
+
+    for my_key in result:
+        my_error = result[my_key]["errors"]
+        if my_error is not None:
+            raise RuntimeError("The following error occurred when running mutation:\n{}".format(my_error))
+
+    return
+
+
 def add_volume(client, study_id, prefix, region, bucket, aws_cred):
     """Run Dewrangle create volume mutation."""
 

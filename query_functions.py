@@ -9,7 +9,11 @@ def check_mutation_result(result):
     for my_key in result:
         my_error = result[my_key]["errors"]
         if my_error is not None:
-            raise RuntimeError("The following error occurred when running mutation:\n{}".format(my_error))
+            raise RuntimeError(
+                "The following error occurred when running mutation:\n{}".format(
+                    my_error
+                )
+            )
 
     return
 
@@ -53,7 +57,8 @@ def add_volume(client, study_id, prefix, region, bucket, aws_cred):
     # run mutation
     result = client.execute(mutation, variable_values=params)
 
-    # check result
+    check_mutation_result(result)
+
     volume_id = result["volumeCreate"]["volume"]["id"]
 
     return volume_id
@@ -94,6 +99,7 @@ def create_study(client, study_name, org_id, run):
     # check if run is given and run mutation
     if run:
         result = client.execute(mutation, variable_values=params)
+        check_mutation_result(result)
         study_id = result["studyCreate"]["study"]["id"]
     else:
         print("{} was not created. Run option was not provided.".format(study_name))
@@ -128,8 +134,9 @@ def list_volume(client, volume_id):
     # run mutation
     result = client.execute(mutation, variable_values=params)
 
-    # check result
-    job_id = result["volumeList"]["temporalWorkflow"]["workflowId"]
+    check_mutation_result(result)
+
+    job_id = result["volumeList"]["job"]["id"]
 
     return job_id
 
@@ -162,7 +169,8 @@ def list_and_hash_volume(client, volume_id, billing_id):
     # run mutation
     result = client.execute(mutation, variable_values=params)
 
-    # check result
+    check_mutation_result(result)
+
     job_id = result["volumeListAndHash"]["job"]["id"]
 
     return job_id
@@ -511,6 +519,7 @@ def remove_volume_from_study(client, vid, run):
     # check if run is given and run mutation
     if run:
         result = client.execute(mutation, params)
+        check_mutation_result(result)
         print("{} successfully deleted".format(vid))
     else:
         print("{} was not deleted. Run option was not provided.".format(vid))

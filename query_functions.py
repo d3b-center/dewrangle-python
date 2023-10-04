@@ -372,8 +372,6 @@ def get_all_studies(client):
     # run query
     result = client.execute(query)
 
-    print(result)
-
     for org_edge in result["viewer"]["organizationUsers"]["edges"]:
         for study_edge in org_edge["node"]["organization"]["studies"]["edges"]:
             study = study_edge["node"]
@@ -728,7 +726,7 @@ def get_volume_jobs(client, vid):
                     node["node"]["createdAt"], "%Y-%m-%dT%H:%M:%S.%fZ"
                 )
                 op = node["node"]["operation"]
-                comp = node["node"]["completedAt"]
+                comp = datetime.strptime(node["node"]["completedAt"], "%Y-%m-%dT%H:%M:%S.%fZ")
                 jobs[id] = {"operation": op, "createdAt": created, "completedAt": comp}
 
     return jobs

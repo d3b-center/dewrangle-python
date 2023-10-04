@@ -75,7 +75,7 @@ def main(args):
         print("JobID|createdAt|completedAt|Job_Type")
         for job in jobs:
             print(
-                "{}|{}|{}".format(
+                "{} | {} | {} | {}".format(
                     job,
                     jobs[job]["createdAt"],
                     jobs[job]["completedAt"],

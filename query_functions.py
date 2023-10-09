@@ -176,6 +176,44 @@ def list_and_hash_volume(client, volume_id, billing_id):
     return job_id
 
 
+def pick_external_id(name, externals, external_type):
+    """From a dictionary of either credential or billing group ids, pick the one to use."""
+
+    ext_id = None
+
+    org = "other"
+    if external_type.lower() == "billing_group":
+        org = "organization"
+    elif external_type.lower() == "credential":
+        org = "study"
+
+    message = ""
+
+    if len(externals) == 1 and name is None:
+        ((ext_id, info),) = externals.items()
+        print("Only one {} available: {}".format(external_type, info["name"]))
+        ext_id = list(externals.keys())[0]
+    elif name:
+        for ext in externals:
+            if name == externals[ext]["name"]:
+                ext_id = ext
+        if ext_id is None:
+            message = "{} {} not found in {}".format(
+                external_type.capitalize(), name, org
+            )
+    elif len(externals) == 0:
+        message = "No credentials in study."
+    else:
+        message = "Multiple {} found in {} but none provided. Please run again and provide one of the following crdentials ids:{}{}".format(
+            external_type, org, "\n", externals
+        )
+
+    if ext_id is None:
+        raise ValueError(message)
+
+    return ext_id
+
+
 def get_cred_id(client, study_id, cred_name):
     """Get credential id"""
 
@@ -184,31 +222,7 @@ def get_cred_id(client, study_id, cred_name):
     # get all credentials in study
     credentials = get_study_credentials(client, study_id)
 
-    for cred in credentials:
-        if cred_name == credentials[cred]["name"]:
-            cred_id = cred
-
-    message = ""
-
-    if len(credentials) == 1:
-        ((cred_id, info),) = credentials.items()
-        print("Only one credential available: {}".format(info["name"]))
-        cred_id = list(credentials.keys())[0]
-    elif cred_name:
-        for cred in credentials:
-            if cred_name == credentials[cred]["name"]:
-                cred_id = cred
-        if cred_id is None:
-            message = "{} credential not found in study".format(cred_name)
-    elif len(credentials) == 0:
-        message = "No credentials in study."
-    else:
-        message = "Multiple credentials found in study but none provided. Please run again and provide one of the following crdentials ids:{}{}".format(
-            "\n", credentials
-        )
-
-    if cred_id is None:
-        raise ValueError(message)
+    cred_id = pick_external_id(cred_name, credentials, "credential")
 
     return cred_id
 
@@ -546,7 +560,6 @@ def get_billing_groups(client, org_id):
                             node {
                                 name
                                 id
-                                default            
                             }
                         }
                     }
@@ -564,8 +577,7 @@ def get_billing_groups(client, org_id):
     for bg in result["organization"]["billingGroups"]["edges"]:
         name = bg["node"]["name"]
         id = bg["node"]["id"]
-        default = bg["node"]["default"]
-        billing_groups[id] = {"name": name, "default": default}
+        billing_groups[id] = {"name": name}
 
     return billing_groups
 
@@ -576,16 +588,7 @@ def get_billing_id(client, org_id, billing):
     # first get a list of organizations and billing groups
     billing_groups = get_billing_groups(client, org_id)
 
-    billing_id = None
-
-    for bg in billing_groups:
-        if billing and billing == billing_groups[bg]["name"]:
-            billing_id = bg
-        elif billing_groups[bg]["default"]:
-            billing_id = bg
-
-    if billing_id is None:
-        raise ValueError("Billing group not found.")
+    billing_id = pick_external_id(billing, billing_groups, "billing_group")
 
     return billing_id
 

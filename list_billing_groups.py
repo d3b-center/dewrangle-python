@@ -47,7 +47,7 @@ def main(args):
     print("Name | Default | ID")
 
     for bg in billing_groups:
-        print("{} | {} | {}".format(billing_groups[bg]["name"], billing_groups[bg]["default"], bg))
+        print("{} | {}".format(billing_groups[bg]["name"], bg))
 
     print("=========================================================================")
 

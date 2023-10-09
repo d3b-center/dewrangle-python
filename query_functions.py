@@ -386,8 +386,6 @@ def get_all_studies(client):
     # run query
     result = client.execute(query)
 
-    print(result)
-
     for org_edge in result["viewer"]["organizationUsers"]["edges"]:
         for study_edge in org_edge["node"]["organization"]["studies"]["edges"]:
             study = study_edge["node"]

@@ -3,6 +3,21 @@ from gql import gql
 from datetime import datetime
 
 
+def check_mutation_result(result):
+    """Check the result of a mutation and handle error(s)"""
+
+    for my_key in result:
+        my_error = result[my_key]["errors"]
+        if my_error is not None:
+            raise RuntimeError(
+                "The following error occurred when running mutation:\n{}".format(
+                    my_error
+                )
+            )
+
+    return
+
+
 def add_volume(client, study_id, prefix, region, bucket, aws_cred):
     """Run Dewrangle create volume mutation."""
 
@@ -42,7 +57,8 @@ def add_volume(client, study_id, prefix, region, bucket, aws_cred):
     # run mutation
     result = client.execute(mutation, variable_values=params)
 
-    # check result
+    check_mutation_result(result)
+
     volume_id = result["volumeCreate"]["volume"]["id"]
 
     return volume_id
@@ -50,7 +66,7 @@ def add_volume(client, study_id, prefix, region, bucket, aws_cred):
 
 def create_study(client, study_name, org_id, run):
     """Run Dewrangle create study mutation."""
-    
+
     study_id = None
 
     # prepare mutation
@@ -83,6 +99,7 @@ def create_study(client, study_name, org_id, run):
     # check if run is given and run mutation
     if run:
         result = client.execute(mutation, variable_values=params)
+        check_mutation_result(result)
         study_id = result["studyCreate"]["study"]["id"]
     else:
         print("{} was not created. Run option was not provided.".format(study_name))
@@ -104,9 +121,9 @@ def list_volume(client, volume_id):
                         field
                     }
                 }
-                temporalWorkflow {
-                    workflowId
-                }    
+                job {
+                    id
+                }
             }
         }
         """
@@ -117,19 +134,20 @@ def list_volume(client, volume_id):
     # run mutation
     result = client.execute(mutation, variable_values=params)
 
-    # check result
-    workflow_id = result["volumeList"]["temporalWorkflow"]["workflowId"]
+    check_mutation_result(result)
 
-    return workflow_id
+    job_id = result["volumeList"]["job"]["id"]
+
+    return job_id
 
 
-def list_and_hash_volume(client, volume_id, billing_id=None):
+def list_and_hash_volume(client, volume_id, billing_id):
     """Run Dewrangle list and hash volume mutation."""
 
     # prepare mutation
     mutation = gql(
         """
-        mutation VolumeListHashMutation($id: ID!, $input: VolumeListAndHashInput) {
+        mutation VolumeListHashMutation($id: ID!, $input: VolumeListAndHashInput!) {
             volumeListAndHash(id: $id, input: $input) {
                 errors {
                     ... on MutationError {
@@ -137,8 +155,8 @@ def list_and_hash_volume(client, volume_id, billing_id=None):
                         field
                     }
                 }
-                temporalWorkflow {
-                    workflowId
+                job {
+                    id
                 }    
             }
         }
@@ -146,43 +164,89 @@ def list_and_hash_volume(client, volume_id, billing_id=None):
     )
 
     params = {"id": volume_id}
-
-    if billing_id is not None:
-        params["input"] = {"billingGroupId": billing_id}
+    params["input"] = {"billingGroupId": billing_id}
 
     # run mutation
     result = client.execute(mutation, variable_values=params)
 
-    # check result
-    workflow_id = result["volumeListAndHash"]["temporalWorkflow"]["workflowId"]
+    check_mutation_result(result)
 
-    return workflow_id
+    job_id = result["volumeListAndHash"]["job"]["id"]
+
+    return job_id
+
+
+def pick_external_id(name, externals, external_type):
+    """From a dictionary of either credential or billing group ids, pick the one to use."""
+
+    ext_id = None
+
+    org = "other"
+    if external_type.lower() == "billing_group":
+        org = "organization"
+    elif external_type.lower() == "credential":
+        org = "study"
+
+    message = ""
+
+    if len(externals) == 1 and name is None:
+        ((ext_id, info),) = externals.items()
+        print("Only one {} available: {}".format(external_type, info["name"]))
+        ext_id = list(externals.keys())[0]
+    elif name:
+        for ext in externals:
+            if name == externals[ext]["name"]:
+                ext_id = ext
+        if ext_id is None:
+            message = "{} {} not found in {}".format(
+                external_type.capitalize(), name, org
+            )
+    elif len(externals) == 0:
+        message = "No credentials in study."
+    else:
+        message = "Multiple {} found in {} but none provided. Please run again and provide one of the following crdentials ids:{}{}".format(
+            external_type, org, "\n", externals
+        )
+
+    if ext_id is None:
+        raise ValueError(message)
+
+    return ext_id
 
 
 def get_cred_id(client, study_id, cred_name):
+    """Get credential id"""
+
+    cred_id = None
+
+    # get all credentials in study
+    credentials = get_study_credentials(client, study_id)
+
+    cred_id = pick_external_id(cred_name, credentials, "credential")
+
+    return cred_id
+
+
+def get_study_credentials(client, study_id):
     """Get credential ids from a study."""
 
     # query all studies and credentials the user has access to.
     # in the future, this should be a simpler query to get study id from study name
-    cred_id = None
-    # set up query to get all available studies
+    credentials = {}
+
+    # set up query to get all credentials in the study
     query = gql(
         """
-        query {
-            viewer {
-                studyUsers {
-                    edges {
-                        node {
-                            study {
+        query Study_Query($id: ID!) {
+            study: node(id: $id) {
+                id
+                ... on Study {
+                    credentials {
+                        edges {
+                            node {
                                 id
-                                credentials {
-                                    edges {
-                                        node {
-                                            id
-                                            name
-                                        }
-                                    }
-                                }
+                                name
+                                key
                             }
                         }
                     }
@@ -192,28 +256,21 @@ def get_cred_id(client, study_id, cred_name):
         """
     )
 
+    params = {"id": study_id}
+
     # run query
-    result = client.execute(query)
+    result = client.execute(query, variable_values=params)
 
     # loop through query results, find the study we're looking for and it's volumes
-    for edge in result["viewer"]["studyUsers"]["edges"]:
-        study = edge["node"]["study"]
-        if study["id"] == study_id:
-            if len(study["credentials"]["edges"]) > 0:
-                # check credential name
-                for cred_edge in study["credentials"]["edges"]:
-                    cred = cred_edge["node"]
-                    cid = cred["id"]
-                    cname = cred["name"]
-                    if cname == cred_name:
-                        cred_id = cid
-            else:
-                print("no credentials in study")
+    for study in result:
+        for cred_edge in result[study]["credentials"]["edges"]:
+            cred = cred_edge["node"]
+            cid = cred["id"]
+            name = cred["name"]
+            key = cred["key"]
+            credentials[cid] = {"name": name, "key": key}
 
-    if cred_id is None:
-        print("{} credential not found in study".format(cred_name))
-
-    return cred_id
+    return credentials
 
 
 def get_org_id(client, org_name):
@@ -264,6 +321,35 @@ def get_org_id(client, org_name):
     return org_id
 
 
+def get_org_id_from_study(client, study_id):
+    """Query study id and get the id of the organization it's in"""
+
+    org_id = ""
+    # set up query to get all available studies
+    query = gql(
+        """
+        query Study_Query($id: ID!) {
+            study: node(id: $id) {
+                ... on Study {
+                    organization {
+                        id
+                    }
+                }
+            }
+        }
+        """
+    )
+
+    params = {"id": study_id}
+
+    # run query
+    result = client.execute(query, params)
+
+    org_id = result["study"]["organization"]["id"]
+
+    return org_id
+
+
 def get_all_studies(client):
     """Query all available studies, return study ids and names"""
 
@@ -274,12 +360,20 @@ def get_all_studies(client):
         """
         query {
             viewer {
-                studyUsers {
+                organizationUsers {
                     edges {
                         node {
-                            study {
-                                id
+                            organization {
                                 name
+                                id
+                                studies {
+                                    edges {
+                                        node {
+                                            name
+                                            id
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -292,12 +386,12 @@ def get_all_studies(client):
     # run query
     result = client.execute(query)
 
-    # loop through query results, find the study we're looking for and it's volumes
-    for edge in result["viewer"]["studyUsers"]["edges"]:
-        study = edge["node"]["study"]
-        id = study["id"]
-        name = study["name"]
-        studies[id] = name
+    for org_edge in result["viewer"]["organizationUsers"]["edges"]:
+        for study_edge in org_edge["node"]["organization"]["studies"]["edges"]:
+            study = study_edge["node"]
+            id = study["id"]
+            name = study["name"]
+            studies[id] = name
 
     return studies
 
@@ -305,39 +399,16 @@ def get_all_studies(client):
 def get_study_id(client, study_name):
     """Query all available studies, return study id"""
 
-    # this function could be split into two get_studies and get_study_id and separate the query
-    # from checking the study name like how get_study_billing_groups and get_billing_id work
-
     study_id = ""
     study_ids = []
-    # set up query to get all available studies
-    query = gql(
-        """
-        query {
-            viewer {
-                studyUsers {
-                    edges {
-                        node {
-                            study {
-                                id
-                                name
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        """
-    )
 
-    # run query
-    result = client.execute(query)
+    # get a dictionary of all study ids and names
+    studies = get_all_studies(client)
 
     # loop through query results, find the study we're looking for and it's volumes
-    for edge in result["viewer"]["studyUsers"]["edges"]:
-        study = edge["node"]["study"]
-        if study["name"] == study_name:
-            study_ids.append(study["id"])
+    for study in studies:
+        if studies[study] == study_name:
+            study_ids.append(study)
 
     if len(study_ids) == 1:
         study_id = study_ids[0]
@@ -354,26 +425,19 @@ def get_study_id(client, study_name):
 
 
 def get_study_volumes(client, study_id):
-    """Query all available studies, find study id, and return volumes in that study"""
+    """Query study id, and return volumes in that study"""
     study_volumes = {}
     # set up query to get all available studies
     query = gql(
         """
-        query {
-            viewer {
-                studyUsers {
-                    edges {
-                        node {
-                            study {
+        query Study_Query($id: ID!) {
+            study: node(id: $id) {
+                ... on Study {
+                    volumes {
+                        edges {
+                            node {
                                 id
-                                volumes {
-                                    edges {
-                                        node {
-                                            id
-                                            name
-                                        }
-                                    }
-                                }
+                                name
                             }
                         }
                     }
@@ -383,21 +447,17 @@ def get_study_volumes(client, study_id):
         """
     )
 
-    # run query
-    result = client.execute(query)
+    params = {"id": study_id}
 
-    # loop through query results, find the study we're looking for and it's volumes
-    for edge in result["viewer"]["studyUsers"]["edges"]:
-        study = edge["node"]["study"]
-        if study["id"] == study_id:
-            if len(study["volumes"]["edges"]) > 0:
-                for volume_edge in study["volumes"]["edges"]:
-                    # get volume from study and format as dict
-                    vid = volume_edge["node"]["id"]
-                    vname = volume_edge["node"]["name"]
-                    study_volumes[vid] = vname
-            else:
-                raise ValueError("No volumes in study.")
+    # run query
+    result = client.execute(query, params)
+
+    for study in result:
+        for volume_edge in result["study"]["volumes"]["edges"]:
+            volume = volume_edge["node"]
+            vid = volume["id"]
+            vname = volume["name"]
+            study_volumes[vid] = vname
 
     return study_volumes
 
@@ -473,6 +533,7 @@ def remove_volume_from_study(client, vid, run):
     # check if run is given and run mutation
     if run:
         result = client.execute(mutation, params)
+        check_mutation_result(result)
         print("{} successfully deleted".format(vid))
     else:
         print("{} was not deleted. Run option was not provided.".format(vid))
@@ -480,8 +541,8 @@ def remove_volume_from_study(client, vid, run):
     return
 
 
-def get_study_billing_groups(client, study_id):
-    """Get available billing groups for a study."""
+def get_billing_groups(client, org_id):
+    """Get available billing groups for an organization."""
 
     billing_groups = {}
 
@@ -489,29 +550,14 @@ def get_study_billing_groups(client, study_id):
     # set up query to get all available studies
     query = gql(
         """
-        query {
-            viewer {
-                organizationUsers {
-                    edges {
-                        node {
-                            organization {
-                                id
+        query Org_Query($id: ID!) {
+            organization: node(id: $id) {
+                ... on Organization {
+                    billingGroups {
+                        edges {
+                            node {
                                 name
-                                billingGroups {
-                                    edges {
-                                        node {
-                                            id
-                                            name
-                                        }
-                                    }
-                                }
-                                studies{
-                                    edges {
-                                        node {
-                                            id
-                                        }
-                                    }
-                                }
+                                id
                             }
                         }
                     }
@@ -521,41 +567,26 @@ def get_study_billing_groups(client, study_id):
         """
     )
 
+    params = {"id": org_id}
+
     # run query
-    result = client.execute(query)
+    result = client.execute(query, params)
 
-    org_count = 0
-    # find organization the study is in, find billing groups, and format output
-    for org in result["viewer"]["organizationUsers"]["edges"]:
-        for study in org["node"]["organization"]["studies"]["edges"]:
-            if study_id == study["node"]["id"]:
-                org_count += 1
-                # get billing group from org and format similarly
-                for node in org["node"]["organization"]["billingGroups"]["edges"]:
-                    bid = node["node"]["id"]
-                    bname = node["node"]["name"]
-                    billing_groups[bid] = bname
-
-    if org_count > 1:
-        raise ValueError("Study {} found in multiple organizations.".format(study_id))
+    for bg in result["organization"]["billingGroups"]["edges"]:
+        name = bg["node"]["name"]
+        id = bg["node"]["id"]
+        billing_groups[id] = {"name": name}
 
     return billing_groups
 
 
-def get_billing_id(client, study_id, billing):
-    "Get billing group id from billing group name."
+def get_billing_id(client, org_id, billing):
+    "Get billing group id. If a name is provided, check it exists. If not return org default."
 
     # first get a list of organizations and billing groups
-    billing_group_list = get_study_billing_groups(client, study_id)
+    billing_groups = get_billing_groups(client, org_id)
 
-    billing_id = None
-
-    for bg in billing_group_list:
-        if billing == bg:
-            billing_id = bg
-
-    if billing_id is None:
-        raise ValueError("Billing group not found.")
+    billing_id = pick_external_id(billing, billing_groups, "billing_group")
 
     return billing_id
 
@@ -613,15 +644,43 @@ def get_job_info(client, jobid):
                     operation
                     createdAt
                     completedAt
+                    billingGroup {
+                        name
+                    }
+                    cost {
+                        cents
+                    }
+                    parentJob {
+                        id
+                        operation
+                        createdAt
+                        completedAt
+                        billingGroup {
+                            name
+                        }
+                        cost {
+                            cents
+                        }
+                    }
+                    children {
+                        id
+                        operation
+                        createdAt
+                        completedAt
+                        billingGroup {
+                            name
+                        }
+                        cost {
+                            cents
+                        }
+                    }
                 }
             }
         }
         """
     )
 
-    params = {
-        "id": jobid
-    }
+    params = {"id": jobid}
 
     # run query
     result = client.execute(query, variable_values=params)
@@ -655,9 +714,7 @@ def get_volume_jobs(client, vid):
         """
     )
 
-    params = {
-        "id": vid
-    }
+    params = {"id": vid}
 
     # run query
     result = client.execute(query, variable_values=params)
@@ -668,7 +725,9 @@ def get_volume_jobs(client, vid):
             for node in result[vol]["jobs"][job]:
                 id = node["node"]["id"]
                 # convert createdAt from string to datetime object
-                created = datetime.strptime(node["node"]["createdAt"], "%Y-%m-%dT%H:%M:%S.%fZ")
+                created = datetime.strptime(
+                    node["node"]["createdAt"], "%Y-%m-%dT%H:%M:%S.%fZ"
+                )
                 op = node["node"]["operation"]
                 comp = node["node"]["completedAt"]
                 jobs[id] = {"operation": op, "createdAt": created, "completedAt": comp}
@@ -698,6 +757,8 @@ def get_most_recent_job(client, vid, job_type):
                 jid = job
 
     if jid is None:
-        raise ValueError("no job(s) matching job type: {} found in volume".format(job_type))
+        raise ValueError(
+            "no job(s) matching job type: {} found in volume".format(job_type)
+        )
 
     return jid

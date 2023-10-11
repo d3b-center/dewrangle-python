@@ -1,4 +1,4 @@
-"""List job status."""
+"""List available credentials in a study."""
 import sys
 import argparse
 from gql import gql, Client
@@ -13,18 +13,18 @@ def parse_args(args):
     parser = argparse.ArgumentParser()
     # required args
     required_args = parser.add_argument_group("required arguments")
-    required_args.add_argument("-j", "--jobid", help="Job ID", required=True)
+    required_args.add_argument("-s", "--study", help="Study name", required=True)
 
     # parse and return arguments
     args = parser.parse_args()
-    job = args.jobid
+    study = args.study
 
-    return job
+    return study
 
 
 def main(args):
     """Main, take args, run script."""
-    job = parse_args(args)
+    study_name = parse_args(args)
 
     # set up api and authentication
     endpoint = "https://dewrangle.com/api/graphql"
@@ -37,13 +37,26 @@ def main(args):
     )
     client = Client(transport=transport, fetch_schema_from_transport=True)
 
-    # query job
-    job_res = qf.get_job_info(client, job)
+    # find all
+    study_id = qf.get_study_id(client, study_name)
+    credentials = qf.get_study_credentials(client, study_id)
 
-    print(job_res)
+    print(
+        "================================================================================================="
+    )
+    print("Available billing groups:")
+    print("Name | Key | ID")
 
-    if job_res["job"]["completedAt"] != "" and job_res["job"]["completedAt"] is not None:
-        print("Job Completed!")
+    for cred in credentials:
+        print(
+            "{} | {} | {}".format(
+                credentials[cred]["name"], credentials[cred]["key"], cred
+            )
+        )
+
+    print(
+        "================================================================================================="
+    )
 
     print("Done!")
 

@@ -28,7 +28,7 @@ api_key = "<<YOUR_KEY>>"
 
 Add a volume to a study and hash the files in it. By default, the default billing group of the organization is used.
 Before hashing the files in a volume, the files are first listed. Listing and hashing are both run on [Cavatica](cavatica.sbgenomics.com/).
-Two report files are generated one for the list of files and one for file hashes. Currently, these reports must be manually downloaded.
+Two report files are generated one for the list of files and one for file hashes.
 If a volume / bucket has already been loaded to the study, the script will fail. If you wish to still add the volume, the `--skip` option
 can be used to reload the volume to the study. However, this will create a new version of the volume and require the other one to be
 deleted separately if desired. Additionally, if an error occurs at any step in the process, previous steps will not be rolled back.
@@ -36,9 +36,9 @@ For example, if an error occurs launching the hash job, the volume will still be
 
 ```
 python add_and_hash_volume.py -h
-usage: add_and_hash_volume.py [-h] [-p PREFIX] [-r REGION] [-g BILLING] [--skip] -s STUDY -b BUCKET -c CREDENTIAL
+usage: add_and_hash_volume.py [-h] [-p PREFIX] [-r REGION] [-g BILLING] [--skip] [-c CREDENTIAL] -s STUDY -b BUCKET
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -p PREFIX, --prefix PREFIX
                         Optional, Path prefix. Default: None
@@ -47,14 +47,14 @@ optional arguments:
   -g BILLING, --billing BILLING
                         Optional, billing group name. When not provided, use default billing group for organization
   --skip                Flag to skip checking if volume is already loaded to study
+  -c CREDENTIAL, --credential CREDENTIAL
+                        Dewrangle AWS credential name. Default, try to find available credential.
 
 required arguments:
   -s STUDY, --study STUDY
                         Study name
   -b BUCKET, --bucket BUCKET
-                        Bucket name
-  -c CREDENTIAL, --credential CREDENTIAL
-                        Dewrangle AWS credential name
+                        Bucket nam
 ```
 
 ### AWS Credential
@@ -62,6 +62,24 @@ required arguments:
 To generate an AWS credential for Dewrangle, go to the Dewrangle page for the study, click settings, in the Credentials section click Add Credential, and fill in the
 Credential Name, AWS Key, and AWS Secret Key. Only the name of the credential needs to be noted and provided to the script.
 
+
+## Hash or List Files in an Existing Volume
+
+The `hash_volume.py` or `list_volume_files.py` allow you to hash or list files in an existing volume. They both take the same options and return the job id of the main job that is launched on Dewrangle.
+
+```
+python hash_volume.py -h
+usage: hash_volume.py [-h] [--vid VID] [--volume VOLUME] -s STUDY
+
+options:
+  -h, --help            show this help message and exit
+  --vid VID             Optional, volume id; required when multiple volumes with the same name are loaded to a directory
+  --volume VOLUME       Volume name, only optional if the vid option is given
+
+required arguments:
+  -s STUDY, --study STUDY
+                        Study name
+```
 
 ## Create Study
 
@@ -121,7 +139,8 @@ required arguments:
 
 ## List Scripts
 
-The `list_billing_groups.py` and `list_volumes_in_study.py` scripts provided similar functionality. Both scripts list either the billing groups or volumes currently available in
+The `list_billing_groups.py`, `list_volumes_in_study.py`, and `list_credentials.py` scripts provided similar functionality. These scripts list the billing groups, volumes,
+or credentials currently available in
 the provided study. The `list_volume_jobs.py` script lists the jobs that were run on the volume and also lists the job ids of the most recent hash and list jobs.
 The `list_job_status.py` script lists the job status from a provided job id.
 

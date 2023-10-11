@@ -25,7 +25,7 @@ def parse_args(args):
     )
     # required args
     required_args = parser.add_argument_group("required arguments")
-    required_args.add_argument("-s", "--study", help="Study name or global id", required=True)
+    required_args.add_argument("-s", "--study", help="Study name, global id, or study id", required=True)
 
     # parse and return arguments
     args = parser.parse_args()

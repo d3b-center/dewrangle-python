@@ -409,7 +409,7 @@ def get_study_id(client, study_name):
 
     # loop through query results, find the study we're looking for and it's volumes
     for study in studies:
-        if study_name in [studies[study]["global_id"], studies[study]["name"]]:
+        if study_name in [study, studies[study]["global_id"], studies[study]["name"]]:
             print(studies[study]["global_id"])
             study_ids.append(study)
 

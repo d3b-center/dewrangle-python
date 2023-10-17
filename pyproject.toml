@@ -13,11 +13,7 @@ readme = "README.md"
 requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",
-<<<<<<< HEAD
     "License :: OSI Approved :: Apache Software License",
-=======
-    "License :: OSI Approved :: Apache License",
->>>>>>> :package: create project metadata file
     "Operating System :: OS Independent",
 ]
 

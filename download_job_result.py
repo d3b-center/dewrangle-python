@@ -2,8 +2,6 @@
 import sys
 import argparse
 import requests
-import credential
-import pandas as pd
 import query_functions as qf
 
 
@@ -52,7 +50,7 @@ def main(args):
 
     endpoint = "https://dewrangle.com/api/rest/jobs/"
 
-    req_header = {"X-Api-Key": credential.api_key}
+    req_header = {"X-Api-Key": qf.get_api_credential()}
 
     if out_base is None:
         out_file = job_id + "_output.csv"

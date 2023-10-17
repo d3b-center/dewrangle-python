@@ -1,6 +1,15 @@
 """Functions to run Dewrangle Graphql queries."""
+import os
+import configparser
 from gql import gql
 from datetime import datetime
+
+
+def get_api_credential():
+    """Get api token from credential file."""
+    config = configparser.ConfigParser()
+    config.read(os.path.join(os.path.expanduser("~"), ".dewrangle", "credentials"))
+    return config["default"]["api_key"]
 
 
 def check_mutation_result(result):

@@ -2,7 +2,7 @@
 import sys
 import argparse
 import requests
-import query_functions as qf
+import dewrangle as qf
 
 
 def parse_args(args):

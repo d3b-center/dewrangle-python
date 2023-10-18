@@ -3,7 +3,7 @@ import sys
 import argparse
 from gql import gql, Client
 from gql.transport.aiohttp import AIOHTTPTransport
-import query_functions as qf
+import dewrangle as qf
 
 
 def parse_args(args):

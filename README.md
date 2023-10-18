@@ -16,10 +16,11 @@ Before running any of the API scripts, an authentication tocken must be created 
 
 1. Click on you profile and go to Settings
 
-1. Click Generate new token and copy the token into credential.py
+1. Click Generate new token and copy the token into `~/.dewrangle/credentials`
 
-### credential.py file
+1. Install the dewrangle-python package
 
+<<<<<<< HEAD
 ```
 api_key = "<<YOUR_KEY>>"
 ```
@@ -70,22 +71,23 @@ The `hash_volume.py` or `list_volume_files.py` allow you to hash or list files i
 ```
 python hash_volume.py -h
 usage: hash_volume.py [-h] [--vid VID] [--volume VOLUME] -s STUDY
+=======
+### credentials file
+>>>>>>> :memo: add instructions on how to install package
 
-options:
-  -h, --help            show this help message and exit
-  --vid VID             Optional, volume id; required when multiple volumes with the same name are loaded to a directory
-  --volume VOLUME       Volume name, only optional if the vid option is given
+The `~/.dewrangle/credentials` is a basic INI file with one section `[default]`
 
+<<<<<<< HEAD
 required arguments:
   -s STUDY, --study STUDY
                         Study name, global id, or study id
+=======
+>>>>>>> :memo: add instructions on how to install package
 ```
-
-## Create Study
-
-Create a study in an organization. The script will first check if a study is loaded to any other organizations.
-
+[default]
+	api_key = "<<YOUR_KEY>>"
 ```
+<<<<<<< HEAD
 python create_study.py -h
 usage: create_study.py [-h] [--run] -s STUDY -o ORG
 
@@ -99,30 +101,23 @@ required arguments:
   -o ORG, --org ORG     Organization name
 ```
 
+=======
+>>>>>>> :memo: add instructions on how to install package
 
-## Download Job Result
+## Installing the dewrangle-python package
 
-After a job is completed, a csv output file is created.
-
+To install the package, simply run:
 ```
-python download_job_result.py -h
-usage: download_job_result.py [-h] [-o OUTPUT] -j JOBID
-
-options:
-  -h, --help            show this help message and exit
-  -o OUTPUT, --output OUTPUT
-                        Optional, Output basename. Default: 'job_id'_output
-
-required arguments:
-  -j JOBID, --jobid JOBID
-                        Job ID
+pip install dewrangle-python
 ```
 
-## Remove (Delete) a Volume
+## Get the Code
 
-Remove a volume from a study using either the volumes name or volume id. The script first checks if the volume is attached to the user provided study. If there are multiple volumes with the same volume name (see Add and Hash Volume above), the script will return all a list of all volumes in the study with the volume name and volume id and will require you to rerun the script and provide the volume id.
+To get the code and run the predeveloped scripts locally, clone this repo and either install the package via `pip` or build it locally.
 
+Clone this repo:
 ```
+<<<<<<< HEAD
 python delete_volume.py -h
 usage: delete_volume.py [-h] [--vid VID] [--volume VOLUME] [--run] -s STUDY
 
@@ -135,16 +130,14 @@ optional arguments:
 required arguments:
   -s STUDY, --study STUDY
                         Study name, global id, or study id
+=======
+git clone https://github.com/d3b-center/dewrangle-python.git
+>>>>>>> :memo: add instructions on how to install package
 ```
 
-## List Scripts
-
-The `list_billing_groups.py`, `list_volumes_in_study.py`, and `list_credentials.py` scripts provided similar functionality. These scripts list the billing groups, volumes,
-or credentials currently available in
-the provided study. The `list_volume_jobs.py` script lists the jobs that were run on the volume and also lists the job ids of the most recent hash and list jobs.
-The `list_job_status.py` script lists the job status from a provided job id.
-
+Install the package locally:
 ```
+<<<<<<< HEAD
 python list_billing_groups.py -h
 usage: list_billing_groups.py [-h] -s STUDY
 
@@ -154,4 +147,8 @@ optional arguments:
 required arguments:
   -s STUDY, --study STUDY
                         Study name, global id, or study id
+=======
+cd dewrangle-python
+pip install -e .
+>>>>>>> :memo: add instructions on how to install package
 ```

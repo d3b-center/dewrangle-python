@@ -762,3 +762,94 @@ def get_most_recent_job(client, vid, job_type):
         )
 
     return jid
+
+
+def get_volumes_admin_info(client):
+    """
+    Query dewrangle for all volumes and studies
+    Get volume name, id, prefix, and credential
+    Get study users and roles
+    """
+
+    studies = {}
+
+    # set up query to get all available studies
+    # query structure: from your PAT, get all studies you have access to, get id, name,
+    # all attached volumes, and all users on that study and their roles
+    query = gql(
+        """
+        query {
+            viewer {
+                studyUsers {
+                    edges {
+                        node {
+                            study {
+                                id
+                                name
+                                volumes {
+                                    edges {
+                                        node {
+                                            id
+                                            name
+                                            pathPrefix
+                                            credential {
+                                                id
+                                                name
+                                            }
+                                        }
+                                    }
+                                }
+                                studyUsers {
+                                    edges {
+                                        node {
+                                            id
+                                            role
+                                            user {
+                                                id
+                                                name
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        """
+    )
+
+    # run query
+    result = client.execute(query)
+
+    # format results to make them easier to use
+    for edge in result["viewer"]["studyUsers"]["edges"]:
+        study = edge["node"]["study"]
+        id = study["id"]
+        name = study["name"]
+        volumes = {}
+        for vedge in study["volumes"]["edges"]:
+            vol = vedge["node"]
+            vname = vol["name"]
+            vid = vol["id"]
+            prefix = vol["pathPrefix"]
+            cname = vol["credential"]["name"]
+            cid = vol["credential"]["id"]
+            volumes[vid] = {
+                "volume_name": vname,
+                "pathPrefix": prefix,
+                "credential_name": cname,
+                "credential_id": cid,
+            }
+        users = {}
+        for suedge in study["studyUsers"]["edges"]:
+            su = suedge["node"]
+            sid = su["id"]
+            role = su["role"]
+            uid = su["user"]["name"]
+            uname = su["user"]["name"]
+            users[sid] = {"role": role, "user_id": uid, "user_name": uname}
+        studies[id] = {"name": name, "volumes": volumes, "users": users}
+
+    return studies

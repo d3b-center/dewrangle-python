@@ -794,3 +794,70 @@ def request_to_df(url, **kwargs):
     my_cols = my_data.pop(0)
     df = pd.DataFrame(my_data, columns=my_cols)
     return df
+def get_study_from_volume(client, volume_name):
+    """Get study id from volume name"""
+
+    study_id = None
+
+    # standardized output messages
+    not_found = "Volume not found"
+    multiples = "Volume found multiple times"
+
+    # setup and run query
+    query = gql(
+        """
+        query {
+            viewer {
+                organizationUsers {
+                    edges {
+                        node {
+                            organization {
+                                studies {
+                                    edges {
+                                        node {
+                                            id
+                                            volumes {
+                                                edges {
+                                                    node {
+                                                        name
+                                                    } 
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        """
+    )
+
+    result = client.execute(query)
+
+    study_ids = []
+
+    # find volumes in list of studies
+    for org_edge in result["viewer"]["organizationUsers"]["edges"]:
+        # loop through studies and collect volume names
+        for study_edge in org_edge["node"]["organization"]["studies"]["edges"]:
+            study = study_edge["node"]
+            my_study_id = study["id"]
+            for volume_edge in study["volumes"]["edges"]:
+                if volume_edge["node"]["name"] == volume_name:
+                    study_ids.append(my_study_id)
+
+    # check if the volume is found or if it's found multiple times
+    if len(study_ids) == 1:
+        study_id = study_ids[0]
+    elif len(study_ids) == 0:
+        study_id = "Volume not found"
+    else:
+        if len(set(study_ids)) == 1:
+            study_id = "Volume found multiple times in study: {}".format(study_ids[0])
+        else:
+            study_id = "Volume found in multiple studies"
+
+    return study_id

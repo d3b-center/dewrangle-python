@@ -39,41 +39,29 @@ def main(args):
     client = Client(transport=transport, fetch_schema_from_transport=True)
 
     # setup output categories
-    studies = []
-    study_volumes = []
     not_founds = []
-    multiples = []
+    multiples = {}
+    good_volumes = {}
 
     # convert from names to ids
-    volumes = volume_names.split(",")
+    volumes = list(set(volume_names.split(",")))
     for vol in volumes:
-        study_id = qf.get_study_from_volume(client, vol)
-        if study_id == "Volume not found":
+        study_ids, message = qf.get_study_from_volume(client, vol)
+        if message == "Volume not found":
             not_founds.append(vol)
-        elif "Volume found" in study_id:
-            multiples.append(vol)
-        elif study_id == None:
-            print(
-                "Some unknnown and uncaught error occurred searching for: {}".format(
-                    vol
-                )
-            )
+        elif message is not None and "Volume loaded" in message:
+            multiples[vol] = study_ids
         else:
-            studies.append(study_id)
-            study_volumes.append(": ".join([vol, study_id]))
-
-    studies = list(set(studies))
+            good_volumes[vol] = study_ids
 
     # process results
     print(
         "====================================================================================="
     )
     print("Volumes only loaded once:")
-    print("Unique study ids with input volumes loaded:")
-    print(studies)
     print("Volume: study_id")
-    for vol in study_volumes:
-        print(vol)
+    for vol in good_volumes:
+        print("{}: {}".format(vol, good_volumes[vol]))
     print(
         "====================================================================================="
     )
@@ -83,7 +71,9 @@ def main(args):
         "====================================================================================="
     )
     print("Volumes loaded to multiple studies or in multiple times in the same study")
-    print(multiples)
+    print("Volume: study_id")
+    for vol in multiples:
+        print("{}: {}".format(vol, multiples[vol]))
     print(
         "====================================================================================="
     )

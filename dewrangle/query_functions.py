@@ -794,14 +794,15 @@ def request_to_df(url, **kwargs):
     my_cols = my_data.pop(0)
     df = pd.DataFrame(my_data, columns=my_cols)
     return df
+
+
 def get_study_from_volume(client, volume_name):
-    """Get study id from volume name"""
+    """Get study id from volume name.
+    Returns the study_id, a warning message if a study is loaded multiple times or not at all,
+    and a list of all study_ids where the volume is loaded."""
 
-    study_id = None
-
-    # standardized output messages
-    not_found = "Volume not found"
-    multiples = "Volume found multiple times"
+    message = None
+    study_list = []
 
     # setup and run query
     query = gql(
@@ -850,14 +851,13 @@ def get_study_from_volume(client, volume_name):
                     study_ids.append(my_study_id)
 
     # check if the volume is found or if it's found multiple times
-    if len(study_ids) == 1:
-        study_id = study_ids[0]
-    elif len(study_ids) == 0:
-        study_id = "Volume not found"
-    else:
-        if len(set(study_ids)) == 1:
-            study_id = "Volume found multiple times in study: {}".format(study_ids[0])
+    if len(study_ids) == 0:
+        message = "Volume not found"
+    elif len(study_ids) > 1:
+        study_ids = list(set(study_ids))
+        if len(study_ids) == 1:
+            message = "Volume loaded multiple times in one study"
         else:
-            study_id = "Volume found in multiple studies"
+            message = "Volume loaded to multiple studies"
 
-    return study_id
+    return study_ids, message

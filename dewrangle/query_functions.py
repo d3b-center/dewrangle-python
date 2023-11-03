@@ -1,5 +1,7 @@
 """Functions to run Dewrangle Graphql queries."""
 import os
+import sys
+import traceback
 import configparser
 import requests
 import pandas as pd
@@ -225,7 +227,7 @@ def pick_external_id(name, externals, external_type):
     return ext_id
 
 
-def get_cred_id(client, study_id, cred_name):
+def get_cred_id(client, study_id, cred_name=None):
     """Get credential id"""
 
     cred_id = None
@@ -594,7 +596,7 @@ def get_billing_groups(client, org_id):
     return billing_groups
 
 
-def get_billing_id(client, org_id, billing):
+def get_billing_id(client, org_id, billing=None):
     "Get billing group id. If a name is provided, check it exists. If not return org default."
 
     # first get a list of organizations and billing groups
@@ -796,6 +798,7 @@ def request_to_df(url, **kwargs):
     return df
 
 
+
 def get_study_from_volume(client, volume_name):
     """Get study id from volume name.
     Returns the study_id, a warning message if a study is loaded multiple times or not at all,
@@ -805,6 +808,7 @@ def get_study_from_volume(client, volume_name):
     study_list = []
 
     # setup and run query
+    # query the volumes in all studies in all organizations that you have access to
     query = gql(
         """
         query {
@@ -840,7 +844,8 @@ def get_study_from_volume(client, volume_name):
 
     study_ids = []
 
-    # find volumes in list of studies
+    # find volume in list of studies
+
     for org_edge in result["viewer"]["organizationUsers"]["edges"]:
         # loop through studies and collect volume names
         for study_edge in org_edge["node"]["organization"]["studies"]["edges"]:
@@ -861,3 +866,39 @@ def get_study_from_volume(client, volume_name):
             message = "Volume loaded to multiple studies"
 
     return study_ids, message
+
+
+def load_and_hash_volume(client, volume_name, study_name, region, prefix=None):
+    """Wrapper function that checks if a volume is loaded, and hashes it."""
+
+    job_id = None
+
+    try:
+
+        # get study and org ids
+        study_id = study_id = get_study_id(client, study_name)
+        org_id = get_org_id_from_study(client, study_id)
+
+        # get billing group id
+        billing_group_id = get_billing_id(client, org_id)
+
+        # check if volume loaded to study
+        study_volumes = get_study_volumes(client, study_id)
+        volume_id = process_volumes(study_id, study_volumes, vname=volume_name)
+
+        if volume_id is None:
+            # if we need to load, get credential
+            aws_cred_id = get_cred_id(client, study_id)
+
+            # load if it's not
+            volume_id = add_volume(
+                client, study_id, prefix, region, volume_name, aws_cred_id
+            )
+
+        # hash
+        job_id = list_and_hash_volume(client, volume_id, billing_group_id)
+
+    except Exception:
+        print("The following error occurred trying to hash {}: {}".format(volume_name, traceback.format_exc()), file=sys.stderr)
+
+    return job_id

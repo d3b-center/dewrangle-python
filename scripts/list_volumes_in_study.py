@@ -38,6 +38,7 @@ def main(args):
 
     # convert from names to ids
     study_id = qf.get_study_id(client, study_name)
+    print(study_id)
     volumes = qf.get_study_volumes(client, study_id)
 
     print(

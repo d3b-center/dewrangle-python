@@ -868,7 +868,9 @@ def get_study_from_volume(client, volume_name):
     return study_ids, message
 
 
-def load_and_hash_volume(client, volume_name, study_name, region, prefix=None):
+def load_and_hash_volume(
+    client, volume_name, study_name, region, prefix=None, billing=None, cred=None
+):
     """Wrapper function that checks if a volume is loaded, and hashes it.
     Inputs: AWS bucket name, study name, aws region, and optional volume prefix.
     Output: job id of parent job creaated when volume is hashed."""
@@ -876,13 +878,12 @@ def load_and_hash_volume(client, volume_name, study_name, region, prefix=None):
     job_id = None
 
     try:
-
         # get study and org ids
         study_id = study_id = get_study_id(client, study_name)
         org_id = get_org_id_from_study(client, study_id)
 
         # get billing group id
-        billing_group_id = get_billing_id(client, org_id)
+        billing_group_id = get_billing_id(client, org_id, billing)
 
         # check if volume loaded to study
         study_volumes = get_study_volumes(client, study_id)
@@ -890,7 +891,7 @@ def load_and_hash_volume(client, volume_name, study_name, region, prefix=None):
 
         if volume_id is None:
             # if we need to load, get credential
-            aws_cred_id = get_cred_id(client, study_id)
+            aws_cred_id = get_cred_id(client, study_id, cred)
 
             # load if it's not
             volume_id = add_volume(
@@ -901,6 +902,11 @@ def load_and_hash_volume(client, volume_name, study_name, region, prefix=None):
         job_id = list_and_hash_volume(client, volume_id, billing_group_id)
 
     except Exception:
-        print("The following error occurred trying to hash {}: {}".format(volume_name, traceback.format_exc()), file=sys.stderr)
+        print(
+            "The following error occurred trying to hash {}: {}".format(
+                volume, traceback.format_exc()
+            ),
+            file=sys.stderr,
+        )
 
     return job_id

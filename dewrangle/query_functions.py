@@ -904,7 +904,7 @@ def load_and_hash_volume(
     except Exception:
         print(
             "The following error occurred trying to hash {}: {}".format(
-                volume, traceback.format_exc()
+                volume_name, traceback.format_exc()
             ),
             file=sys.stderr,
         )

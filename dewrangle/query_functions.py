@@ -869,7 +869,9 @@ def get_study_from_volume(client, volume_name):
 
 
 def load_and_hash_volume(client, volume_name, study_name, region, prefix=None):
-    """Wrapper function that checks if a volume is loaded, and hashes it."""
+    """Wrapper function that checks if a volume is loaded, and hashes it.
+    Inputs: AWS bucket name, study name, aws region, and optional volume prefix.
+    Output: job id of parent job creaated when volume is hashed."""
 
     job_id = None
 

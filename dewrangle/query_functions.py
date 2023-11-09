@@ -1,6 +1,8 @@
 """Functions to run Dewrangle Graphql queries."""
 import os
 import configparser
+import requests
+import pandas as pd
 from gql import gql
 from datetime import datetime
 
@@ -741,7 +743,9 @@ def get_volume_jobs(client, vid):
                     node["node"]["createdAt"], "%Y-%m-%dT%H:%M:%S.%fZ"
                 )
                 op = node["node"]["operation"]
-                comp = datetime.strptime(node["node"]["completedAt"], "%Y-%m-%dT%H:%M:%S.%fZ")
+                comp = datetime.strptime(
+                    node["node"]["completedAt"], "%Y-%m-%dT%H:%M:%S.%fZ"
+                )
                 jobs[id] = {"operation": op, "createdAt": created, "completedAt": comp}
 
     return jobs
@@ -774,3 +778,19 @@ def get_most_recent_job(client, vid, job_type):
         )
 
     return jid
+
+
+def request_to_df(url, **kwargs):
+    """Call api and return response as a pandas dataframe."""
+    my_data = []
+    with requests.get(url, **kwargs) as response:
+        # check if the request was successful
+        if response.status_code == 200:
+            for line in response.iter_lines():
+                my_data.append(line.decode().split(","))
+        else:
+            print(f"Failed to fetch the CSV. Status code: {response.status_code}")
+
+    my_cols = my_data.pop(0)
+    df = pd.DataFrame(my_data, columns=my_cols)
+    return df

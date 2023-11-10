@@ -52,7 +52,7 @@ options:
 
 required arguments:
   -s STUDY, --study STUDY
-                        Study name
+                        Study name, global id, or study id
   -b BUCKET, --bucket BUCKET
                         Bucket nam
 ```
@@ -78,7 +78,7 @@ options:
 
 required arguments:
   -s STUDY, --study STUDY
-                        Study name
+                        Study name, global id, or study id
 ```
 
 ## Create Study
@@ -95,7 +95,7 @@ options:
 
 required arguments:
   -s STUDY, --study STUDY
-                        Study name
+                        Study name, global id, or study id
   -o ORG, --org ORG     Organization name
 ```
 
@@ -134,7 +134,7 @@ optional arguments:
 
 required arguments:
   -s STUDY, --study STUDY
-                        Study name
+                        Study name, global id, or study id
 ```
 
 ## List Scripts
@@ -153,5 +153,5 @@ optional arguments:
 
 required arguments:
   -s STUDY, --study STUDY
-                        Study name
+                        Study name, global id, or study id
 ```

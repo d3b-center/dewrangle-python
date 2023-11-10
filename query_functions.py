@@ -371,6 +371,7 @@ def get_all_studies(client):
                                         node {
                                             name
                                             id
+                                            globalId
                                         }
                                     }
                                 }
@@ -391,7 +392,8 @@ def get_all_studies(client):
             study = study_edge["node"]
             id = study["id"]
             name = study["name"]
-            studies[id] = name
+            global_id = study["globalId"]
+            studies[id] = {"name": name, "global_id": global_id}
 
     return studies
 
@@ -407,7 +409,8 @@ def get_study_id(client, study_name):
 
     # loop through query results, find the study we're looking for and it's volumes
     for study in studies:
-        if studies[study] == study_name:
+        if study_name in [study, studies[study]["global_id"], studies[study]["name"]]:
+            print(studies[study]["global_id"])
             study_ids.append(study)
 
     if len(study_ids) == 1:

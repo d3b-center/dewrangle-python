@@ -1,4 +1,4 @@
-"""List volumes in a study."""
+"""List ids for a study."""
 import sys
 import argparse
 from gql import gql, Client
@@ -37,17 +37,25 @@ def main(args):
     )
     client = Client(transport=transport, fetch_schema_from_transport=True)
 
-    # convert from names to ids
+    # get our study id
     study_id = qf.get_study_id(client, study_name)
-    volumes = qf.get_study_volumes(client, study_id)
+
+    # get the study's org id
+    org_id = qf.get_org_id_from_study(client, study_id)
+
+    # get all studies and find ours (a little redundant, but this shouldn't take long)
+    all_studies = qf.get_all_studies(client)
+
+    # get the info for our study
+    study_info = all_studies[study_id]
+
+    url = "dewrangle.com/" + org_id + "/" + study_id
 
     print(
         "====================================================================================="
     )
-    print("Volumes attached to study:")
-    for vol in volumes:
-        print("{}: {}".format(volumes[vol], vol))
-
+    print("Study id: study name, global_id, url")
+    print("{}: {}, {}, {}".format(study_id, study_info["name"], study_info["global_id"], url))
     print(
         "====================================================================================="
     )

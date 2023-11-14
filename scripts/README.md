@@ -4,7 +4,7 @@ This directory contains a group of helpful scripts for using the `dewrangle-pyth
 
 ## Add and Hash Bucket
 
-Add a bucdket / volume to a study and hash the files in it. By default, the default billing group of the organization is used.
+Add a bucket / volume to a study and hash the files in it. By default, the default billing group of the organization is used.
 Before hashing the files in a volume, the files are first listed. Listing and hashing are both run on [Cavatica](cavatica.sbgenomics.com/).
 
 

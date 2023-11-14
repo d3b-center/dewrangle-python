@@ -50,3 +50,9 @@ Install the package locally:
 cd dewrangle-python
 pip install -e .
 ```
+
+## Key Functions
+
+The key function for using Dewrangle is `load_and_hash_volume`. The function takes a GraphQL connection client, the bucket name, study name, AWS region, prefx, billing group name, and AWS credential name.
+The function checks if the volume is already to the provided study and if it is not, loads it to the study. Then, it will hash the volume and return the job id of the job that gets launched.
+This can be used later for tracking the job and getting the results. On Dewrangle, when a volume is hashed, a series of jobs are created. The job id that is returned by the `load_and_hash_volume` function is the parent job id. That job will only be marked as completed when all of the child jobs are succesfully completed.

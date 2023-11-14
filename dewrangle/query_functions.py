@@ -608,8 +608,9 @@ def get_billing_id(client, org_id, billing=None):
 
 
 def process_volumes(study, volumes, **kwargs):
-    """Process a dict of volume names and ids, if there's only 1, check it's in the study,
-    and returns volume_id."""
+    """Check if a volume is already loaded to a study.
+    Inputs: study id, dictionary of volumes in the study, optionally volume name or volume id.
+    Outputs: volume id"""
     volume_id = kwargs.get("vid", None)
     vname = kwargs.get("vname", None)
 
@@ -878,7 +879,7 @@ def load_and_hash_volume(
 
     try:
         # get study and org ids
-        study_id = study_id = get_study_id(client, study_name)
+        study_id = get_study_id(client, study_name)
         org_id = get_org_id_from_study(client, study_id)
 
         # get billing group id

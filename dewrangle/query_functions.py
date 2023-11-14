@@ -5,7 +5,8 @@ import traceback
 import configparser
 import requests
 import pandas as pd
-from gql import gql
+from gql import gql, Client
+from gql.transport.aiohttp import AIOHTTPTransport
 from datetime import datetime
 
 
@@ -936,7 +937,10 @@ def download_job_result(client, endpoint, req_header, jobid):
         # we can only download results for hash or list jobs so check that the job is one of those
         if job_type in ["VOLUME_LIST", "VOLUME_HASH", "VOLUME_LIST_AND_HASH"]:
             # if the job is a parent job, find the hash job to get it's result
-            if job_type == "VOLUME_LIST_AND_HASH" and len(job_info["job"]["children"]) != 0:
+            if (
+                job_type == "VOLUME_LIST_AND_HASH"
+                and len(job_info["job"]["children"]) != 0
+            ):
                 for child_job in job_info["job"]["children"]:
                     if child_job["operation"] == "VOLUME_HASH":
                         jobid = child_job["id"]
@@ -946,3 +950,21 @@ def download_job_result(client, endpoint, req_header, jobid):
             print("Job type {} does not have results to download".format(job_type))
 
     return job_status, job_result
+
+
+def create_client(endpoint=None):
+    """Create GraphQL client connection"""
+
+    # default endpoint
+    if endpoint is None:
+        endpoint = "https://dewrangle.com/api/graphql"
+
+    req_header = {"X-Api-Key": get_api_credential()}
+
+    transport = AIOHTTPTransport(
+        url=endpoint,
+        headers=req_header,
+    )
+    client = Client(transport=transport, fetch_schema_from_transport=True)
+
+    return client

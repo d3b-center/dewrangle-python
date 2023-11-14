@@ -798,7 +798,6 @@ def request_to_df(url, **kwargs):
     return df
 
 
-
 def get_study_from_volume(client, volume_name):
     """Get study id from volume name.
     Returns the study_id, a warning message if a study is loaded multiple times or not at all,
@@ -910,3 +909,39 @@ def load_and_hash_volume(
         )
 
     return job_id
+
+
+def download_job_result(client, endpoint, req_header, jobid):
+    """Check if a job is complete, download results if it is.
+    If the job is a list and hash job, only download the hash result
+    Inputs: graphql client, rest api endpoint, request header, and, jobid
+    Outputs: job status, results df(s)."""
+
+    job_status = None
+
+    job_result = None
+
+    job_info = get_job_info(client, jobid)
+
+    # check if it's done
+    if (
+        job_info["job"]["completedAt"] != ""
+        and job_info["job"]["completedAt"] is not None
+    ):
+        job_status = "Complete"
+
+    if job_status == "Complete":
+        job_type = job_info["job"]["operation"]
+        # we can only download results for hash or list jobs so check that the job is one of those
+        if job_type in ["VOLUME_LIST", "VOLUME_HASH", "VOLUME_LIST_AND_HASH"]:
+            # if the job is a parent job, find the hash job to get it's result
+            if job_type == "VOLUME_LIST_AND_HASH" and len(job_info["job"]["children"]) != 0:
+                for child_job in job_info["job"]["children"]:
+                    if child_job["operation"] == "VOLUME_HASH":
+                        jobid = child_job["id"]
+            url = endpoint + jobid + "/result"
+            job_result = request_to_df(url, headers=req_header, stream=True)
+        else:
+            print("Job type {} does not have results to download".format(job_type))
+
+    return job_status, job_result

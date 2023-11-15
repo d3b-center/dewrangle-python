@@ -2,8 +2,6 @@
 import sys
 import argparse
 import dewrangle as qf
-from gql import gql, Client
-from gql.transport.aiohttp import AIOHTTPTransport
 
 
 def parse_args(args):
@@ -33,24 +31,14 @@ def main(args):
     """Main, take args, run script."""
     job_id, out_base = parse_args(args)
 
-    req_header = {"X-Api-Key": qf.get_api_credential()}
-
-    ql_endpoint = "https://dewrangle.com/api/graphql"
-
-    rest_endpoint = "https://dewrangle.com/api/rest/jobs/"
-
-    transport = AIOHTTPTransport(
-        url=ql_endpoint,
-        headers=req_header,
-    )
-    client = Client(transport=transport, fetch_schema_from_transport=True)
+    #client = qf.create_client()
 
     if out_base is None:
         out_file = job_id + "_output.csv"
     else:
         out_file = out_base + ".csv"
 
-    status, res = qf.download_job_result(client, rest_endpoint, req_header, job_id)
+    status, res = qf.download_job_result(job_id)
 
     print(status)
 

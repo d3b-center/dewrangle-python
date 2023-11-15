@@ -1,8 +1,6 @@
 """Add volume to a Dewrangle study."""
 import sys
 import argparse
-from gql import gql, Client
-from gql.transport.aiohttp import AIOHTTPTransport
 import dewrangle as qf
 
 
@@ -58,19 +56,9 @@ def main(args):
     """Main, take args, run script."""
     prefix, region, study_name, bucket, aws_cred, billing = parse_args(args)
 
-    endpoint = "https://dewrangle.com/api/graphql"
-
-    req_header = {"X-Api-Key": qf.get_api_credential()}
-
-    transport = AIOHTTPTransport(
-        url=endpoint,
-        headers=req_header,
-    )
-    client = Client(transport=transport, fetch_schema_from_transport=True)
-
     # call wrapper function
     job_id = qf.load_and_hash_volume(
-        client, bucket, study_name, region, prefix, billing, aws_cred
+        bucket, study_name, region, prefix, billing, aws_cred
     )
 
     print("List and Hash job id: {}".format(job_id))

@@ -870,11 +870,14 @@ def get_study_from_volume(client, volume_name):
 
 
 def load_and_hash_volume(
-    client, volume_name, study_name, region, prefix=None, billing=None, cred=None
+    volume_name, study_name, region, prefix=None, billing=None, cred=None, client=None
 ):
     """Wrapper function that checks if a volume is loaded, and hashes it.
     Inputs: AWS bucket name, study name, aws region, and optional volume prefix.
     Output: job id of parent job creaated when volume is hashed."""
+
+    if client is None:
+        client = create_gql_client()
 
     job_id = None
 
@@ -913,11 +916,14 @@ def load_and_hash_volume(
     return job_id
 
 
-def download_job_result(client, endpoint, req_header, jobid):
+def download_job_result(jobid, client=None):
     """Check if a job is complete, download results if it is.
-    If the job is a list and hash job, only download the hash result
-    Inputs: graphql client, rest api endpoint, request header, and, jobid
-    Outputs: job status, results df(s)."""
+    If the job is a list and hash job, only download the hash result."""
+
+    if client is None:
+        client = create_gql_client()
+
+    endpoint, req_header = create_rest_creds()
 
     job_status = None
 
@@ -952,7 +958,7 @@ def download_job_result(client, endpoint, req_header, jobid):
     return job_status, job_result
 
 
-def create_client(endpoint=None):
+def create_gql_client(endpoint=None):
     """Create GraphQL client connection"""
 
     # default endpoint
@@ -968,3 +974,15 @@ def create_client(endpoint=None):
     client = Client(transport=transport, fetch_schema_from_transport=True)
 
     return client
+
+
+def create_rest_creds(endpoint=None):
+    """Create Rest connection"""
+
+    # default endpoint
+    if endpoint is None:
+        endpoint = "https://dewrangle.com/api/rest/jobs/"
+
+    req_header = {"X-Api-Key": get_api_credential()}
+
+    return endpoint, req_header

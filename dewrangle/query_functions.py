@@ -650,8 +650,11 @@ def process_volumes(study, volumes, **kwargs):
     return volume_id
 
 
-def get_job_info(client, jobid):
+def get_job_info(jobid, client=None):
     """Query job info with job id"""
+
+    if client is None:
+        client = create_gql_client()
 
     query = gql(
         """
@@ -920,17 +923,14 @@ def download_job_result(jobid, client=None):
     """Check if a job is complete, download results if it is.
     If the job is a list and hash job, only download the hash result."""
 
-    if client is None:
-        client = create_gql_client()
-
     endpoint, req_header = create_rest_creds()
 
     job_status = None
 
     job_result = None
 
-    job_info = get_job_info(client, jobid)
-
+    job_info = get_job_info(jobid, client)
+    
     # check if it's done
     if (
         job_info["job"]["completedAt"] != ""

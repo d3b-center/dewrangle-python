@@ -1,8 +1,6 @@
 """List job status."""
 import sys
 import argparse
-from gql import gql, Client
-from gql.transport.aiohttp import AIOHTTPTransport
 import dewrangle as qf
 
 
@@ -25,19 +23,8 @@ def main(args):
     """Main, take args, run script."""
     job = parse_args(args)
 
-    # set up api and authentication
-    endpoint = "https://dewrangle.com/api/graphql"
-
-    req_header = {"X-Api-Key": qf.get_api_credential()}
-
-    transport = AIOHTTPTransport(
-        url=endpoint,
-        headers=req_header,
-    )
-    client = Client(transport=transport, fetch_schema_from_transport=True)
-
     # query job
-    job_res = qf.get_job_info(client, job)
+    job_res = qf.get_job_info(job)
 
     print(job_res)
 

@@ -3,8 +3,7 @@ import sys
 import argparse
 from gql import gql, Client
 from gql.transport.aiohttp import AIOHTTPTransport
-import credential
-import query_functions as qf
+import dewrangle as qf
 
 
 def parse_args(args):
@@ -33,12 +32,6 @@ def parse_args(args):
         required=False,
     )
     parser.add_argument(
-        "--skip",
-        help="Flag to skip checking if volume is already loaded to study",
-        action="store_true",
-        required=False,
-    )
-    parser.add_argument(
         "-c",
         "--credential",
         help="Dewrangle AWS credential name. Default, try to find available credential.",
@@ -57,18 +50,17 @@ def parse_args(args):
     bucket = args.bucket
     aws_cred = args.credential
     billing = args.billing
-    skip = args.skip
 
-    return (prefix, region, study, bucket, aws_cred, billing, skip)
+    return (prefix, region, study, bucket, aws_cred, billing)
 
 
 def main(args):
     """Main, take args, run script."""
-    prefix, region, study_name, bucket, aws_cred, billing, skip = parse_args(args)
+    prefix, region, study_name, bucket, aws_cred, billing = parse_args(args)
 
     endpoint = "https://dewrangle.com/api/graphql"
 
-    req_header = {"X-Api-Key": credential.api_key}
+    req_header = {"X-Api-Key": qf.get_api_credential()}
 
     transport = AIOHTTPTransport(
         url=endpoint,
@@ -76,37 +68,12 @@ def main(args):
     )
     client = Client(transport=transport, fetch_schema_from_transport=True)
 
-    # convert from names to ids
-    study_id = qf.get_study_id(client, study_name)
-    aws_cred_id = qf.get_cred_id(client, study_id, aws_cred)
-    org_id = qf.get_org_id_from_study(client, study_id)
-    billing_group_id = qf.get_billing_id(client, org_id, billing)
-
-    # check if volume is already added to study
-    if not skip:
-        volumes = qf.get_study_volumes(client, study_id)
-        if bucket in volumes.values():
-            raise ValueError(
-                "Volume {} already loaded to {}.".format(bucket, study_name)
-            )
-
-    # run create volume mutation
-    volume_id = qf.add_volume(client, study_id, prefix, region, bucket, aws_cred_id)
-
-    print("Volume id: {}".format(volume_id))
-
-    # run hash mutation
-    job_id = qf.list_and_hash_volume(client, volume_id, billing_group_id)
+    # call wrapper function
+    job_id = qf.load_and_hash_volume(
+        client, bucket, study_name, region, prefix, billing, aws_cred
+    )
 
     print("List and Hash job id: {}".format(job_id))
-
-    """
-    Removing this for now since the job doesn't get created immediately
-    # get job id from volume
-    jobid = qf.get_most_recent_job(client, volume_id, "hash")
-
-    print("Hashing job id: {}".format(jobid))
-    """
 
     # clean up and finish
     print("Volume(s) successfully added and is being hashed.")

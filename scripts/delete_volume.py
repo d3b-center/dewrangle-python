@@ -1,10 +1,10 @@
-"""List files in a volume."""
+"""Script to delete volume from a study."""
 import sys
 import argparse
+import re
 from gql import gql, Client
 from gql.transport.aiohttp import AIOHTTPTransport
-import credential
-import query_functions as qf
+import dewrangle as qf
 
 
 def parse_args(args):
@@ -23,6 +23,12 @@ def parse_args(args):
         default=None,
         required=False,
     )
+    parser.add_argument(
+        "--run",
+        help="Flag to actually run deletion mutations",
+        action="store_true",
+        required=False,
+    )
     # required args
     required_args = parser.add_argument_group("required arguments")
     required_args.add_argument("-s", "--study", help="Study name, global id, or study id", required=True)
@@ -32,13 +38,14 @@ def parse_args(args):
     study = args.study
     name = args.volume
     vid = args.vid
+    run = args.run
 
-    return (study, name, vid)
+    return (study, name, vid, run)
 
 
 def main(args):
     """Main, take args, run script."""
-    study_name, name, vid = parse_args(args)
+    study_name, name, vid, run = parse_args(args)
 
     # check for either vid or name
     if not (name or vid):
@@ -47,7 +54,7 @@ def main(args):
     # set up api and authentication
     endpoint = "https://dewrangle.com/api/graphql"
 
-    req_header = {"X-Api-Key": credential.api_key}
+    req_header = {"X-Api-Key": qf.get_api_credential()}
 
     transport = AIOHTTPTransport(
         url=endpoint,
@@ -64,8 +71,9 @@ def main(args):
         volume_id = qf.process_volumes(study_name, volumes, vid=vid)
 
     if volume_id is not None:
-        job_id = qf.list_volume(client, volume_id)
-        print("List job id: {}".format(job_id))
+        qf.remove_volume_from_study(client, volume_id, run)
+
+    # TODO: maybe delete all volume with name if -a option given???
 
     print("Done!")
 

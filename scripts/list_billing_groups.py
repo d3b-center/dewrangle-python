@@ -1,10 +1,9 @@
-"""List available credentials in a study."""
+"""List available billing groups in a study."""
 import sys
 import argparse
 from gql import gql, Client
 from gql.transport.aiohttp import AIOHTTPTransport
-import credential
-import query_functions as qf
+import dewrangle as qf
 
 
 def parse_args(args):
@@ -29,7 +28,7 @@ def main(args):
     # set up api and authentication
     endpoint = "https://dewrangle.com/api/graphql"
 
-    req_header = {"X-Api-Key": credential.api_key}
+    req_header = {"X-Api-Key": qf.get_api_credential()}
 
     transport = AIOHTTPTransport(
         url=endpoint,
@@ -39,24 +38,17 @@ def main(args):
 
     # find all
     study_id = qf.get_study_id(client, study_name)
-    credentials = qf.get_study_credentials(client, study_id)
+    org_id = qf.get_org_id_from_study(client, study_id)
+    billing_groups = qf.get_billing_groups(client, org_id)
 
-    print(
-        "================================================================================================="
-    )
+    print("=========================================================================")
     print("Available billing groups:")
-    print("Name | Key | ID")
+    print("Name | Default | ID")
 
-    for cred in credentials:
-        print(
-            "{} | {} | {}".format(
-                credentials[cred]["name"], credentials[cred]["key"], cred
-            )
-        )
+    for bg in billing_groups:
+        print("{} | {}".format(billing_groups[bg]["name"], bg))
 
-    print(
-        "================================================================================================="
-    )
+    print("=========================================================================")
 
     print("Done!")
 

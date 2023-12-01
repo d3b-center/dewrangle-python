@@ -1,11 +1,9 @@
-"""Script to delete volume from a study."""
+"""List files in a volume."""
 import sys
 import argparse
-import re
 from gql import gql, Client
 from gql.transport.aiohttp import AIOHTTPTransport
-import credential
-import query_functions as qf
+import dewrangle as qf
 
 
 def parse_args(args):
@@ -48,7 +46,7 @@ def main(args):
     # set up api and authentication
     endpoint = "https://dewrangle.com/api/graphql"
 
-    req_header = {"X-Api-Key": credential.api_key}
+    req_header = {"X-Api-Key": qf.get_api_credential()}
 
     transport = AIOHTTPTransport(
         url=endpoint,
@@ -65,39 +63,8 @@ def main(args):
         volume_id = qf.process_volumes(study_name, volumes, vid=vid)
 
     if volume_id is not None:
-        jobs = qf.get_volume_jobs(client, volume_id)
-
-        # print all jobs
-        print(
-            "========================================================================================"
-        )
-        print("All jobs in volume:")
-        print("JobID|createdAt|completedAt|Job_Type")
-        for job in jobs:
-            print(
-                "{} | {} | {} | {}".format(
-                    job,
-                    jobs[job]["createdAt"],
-                    jobs[job]["completedAt"],
-                    jobs[job]["operation"],
-                )
-            )
-
-        print(
-            "========================================================================================"
-        )
-
-        # get most recent job and print id
-        print(
-            "Most recent hash job id: {}".format(
-                qf.get_most_recent_job(client, volume_id, "hash")
-            )
-        )
-        print(
-            "Most recent list job id: {}".format(
-                qf.get_most_recent_job(client, volume_id, "list")
-            )
-        )
+        job_id = qf.list_volume(client, volume_id)
+        print("List job id: {}".format(job_id))
 
     print("Done!")
 

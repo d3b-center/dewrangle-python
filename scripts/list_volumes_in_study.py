@@ -1,10 +1,9 @@
-"""List job status."""
+"""List volumes in a study."""
 import sys
 import argparse
 from gql import gql, Client
 from gql.transport.aiohttp import AIOHTTPTransport
-import credential
-import query_functions as qf
+import dewrangle as qf
 
 
 def parse_args(args):
@@ -13,23 +12,23 @@ def parse_args(args):
     parser = argparse.ArgumentParser()
     # required args
     required_args = parser.add_argument_group("required arguments")
-    required_args.add_argument("-j", "--jobid", help="Job ID", required=True)
+    required_args.add_argument("-s", "--study", help="Study name, global id, or study id", required=True)
 
     # parse and return arguments
     args = parser.parse_args()
-    job = args.jobid
+    study = args.study
 
-    return job
+    return study
 
 
 def main(args):
     """Main, take args, run script."""
-    job = parse_args(args)
+    study_name = parse_args(args)
 
     # set up api and authentication
     endpoint = "https://dewrangle.com/api/graphql"
 
-    req_header = {"X-Api-Key": credential.api_key}
+    req_header = {"X-Api-Key": qf.get_api_credential()}
 
     transport = AIOHTTPTransport(
         url=endpoint,
@@ -37,13 +36,21 @@ def main(args):
     )
     client = Client(transport=transport, fetch_schema_from_transport=True)
 
-    # query job
-    job_res = qf.get_job_info(client, job)
+    # convert from names to ids
+    study_id = qf.get_study_id(client, study_name)
+    print(study_id)
+    volumes = qf.get_study_volumes(client, study_id)
 
-    print(job_res)
+    print(
+        "====================================================================================="
+    )
+    print("Volumes attached to study:")
+    for vol in volumes:
+        print("{}: {}".format(volumes[vol], vol))
 
-    if job_res["job"]["completedAt"] != "" and job_res["job"]["completedAt"] is not None:
-        print("Job Completed!")
+    print(
+        "====================================================================================="
+    )
 
     print("Done!")
 

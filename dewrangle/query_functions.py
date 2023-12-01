@@ -1,6 +1,19 @@
 """Functions to run Dewrangle Graphql queries."""
+import os
+import sys
+import traceback
+import configparser
+import requests
+import pandas as pd
 from gql import gql
 from datetime import datetime
+
+
+def get_api_credential():
+    """Get api token from credential file."""
+    config = configparser.ConfigParser()
+    config.read(os.path.join(os.path.expanduser("~"), ".dewrangle", "credentials"))
+    return config["default"]["api_key"]
 
 
 def check_mutation_result(result):
@@ -214,7 +227,7 @@ def pick_external_id(name, externals, external_type):
     return ext_id
 
 
-def get_cred_id(client, study_id, cred_name):
+def get_cred_id(client, study_id, cred_name=None):
     """Get credential id"""
 
     cred_id = None
@@ -583,7 +596,7 @@ def get_billing_groups(client, org_id):
     return billing_groups
 
 
-def get_billing_id(client, org_id, billing):
+def get_billing_id(client, org_id, billing=None):
     "Get billing group id. If a name is provided, check it exists. If not return org default."
 
     # first get a list of organizations and billing groups
@@ -732,7 +745,9 @@ def get_volume_jobs(client, vid):
                     node["node"]["createdAt"], "%Y-%m-%dT%H:%M:%S.%fZ"
                 )
                 op = node["node"]["operation"]
-                comp = datetime.strptime(node["node"]["completedAt"], "%Y-%m-%dT%H:%M:%S.%fZ")
+                comp = datetime.strptime(
+                    node["node"]["completedAt"], "%Y-%m-%dT%H:%M:%S.%fZ"
+                )
                 jobs[id] = {"operation": op, "createdAt": created, "completedAt": comp}
 
     return jobs
@@ -765,3 +780,133 @@ def get_most_recent_job(client, vid, job_type):
         )
 
     return jid
+
+
+def request_to_df(url, **kwargs):
+    """Call api and return response as a pandas dataframe."""
+    my_data = []
+    with requests.get(url, **kwargs) as response:
+        # check if the request was successful
+        if response.status_code == 200:
+            for line in response.iter_lines():
+                my_data.append(line.decode().split(","))
+        else:
+            print(f"Failed to fetch the CSV. Status code: {response.status_code}")
+
+    my_cols = my_data.pop(0)
+    df = pd.DataFrame(my_data, columns=my_cols)
+    return df
+
+
+
+def get_study_from_volume(client, volume_name):
+    """Get study id from volume name.
+    Returns the study_id, a warning message if a study is loaded multiple times or not at all,
+    and a list of all study_ids where the volume is loaded."""
+
+    message = None
+    study_list = []
+
+    # setup and run query
+    # query the volumes in all studies in all organizations that you have access to
+    query = gql(
+        """
+        query {
+            viewer {
+                organizationUsers {
+                    edges {
+                        node {
+                            organization {
+                                studies {
+                                    edges {
+                                        node {
+                                            id
+                                            volumes {
+                                                edges {
+                                                    node {
+                                                        name
+                                                    } 
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        """
+    )
+
+    result = client.execute(query)
+
+    study_ids = []
+
+    # find volume in list of studies
+
+    for org_edge in result["viewer"]["organizationUsers"]["edges"]:
+        # loop through studies and collect volume names
+        for study_edge in org_edge["node"]["organization"]["studies"]["edges"]:
+            study = study_edge["node"]
+            my_study_id = study["id"]
+            for volume_edge in study["volumes"]["edges"]:
+                if volume_edge["node"]["name"] == volume_name:
+                    study_ids.append(my_study_id)
+
+    # check if the volume is found or if it's found multiple times
+    if len(study_ids) == 0:
+        message = "Volume not found"
+    elif len(study_ids) > 1:
+        study_ids = list(set(study_ids))
+        if len(study_ids) == 1:
+            message = "Volume loaded multiple times in one study"
+        else:
+            message = "Volume loaded to multiple studies"
+
+    return study_ids, message
+
+
+def load_and_hash_volume(
+    client, volume_name, study_name, region, prefix=None, billing=None, cred=None
+):
+    """Wrapper function that checks if a volume is loaded, and hashes it.
+    Inputs: AWS bucket name, study name, aws region, and optional volume prefix.
+    Output: job id of parent job creaated when volume is hashed."""
+
+    job_id = None
+
+    try:
+        # get study and org ids
+        study_id = study_id = get_study_id(client, study_name)
+        org_id = get_org_id_from_study(client, study_id)
+
+        # get billing group id
+        billing_group_id = get_billing_id(client, org_id, billing)
+
+        # check if volume loaded to study
+        study_volumes = get_study_volumes(client, study_id)
+        volume_id = process_volumes(study_id, study_volumes, vname=volume_name)
+
+        if volume_id is None:
+            # if we need to load, get credential
+            aws_cred_id = get_cred_id(client, study_id, cred)
+
+            # load if it's not
+            volume_id = add_volume(
+                client, study_id, prefix, region, volume_name, aws_cred_id
+            )
+
+        # hash
+        job_id = list_and_hash_volume(client, volume_id, billing_group_id)
+
+    except Exception:
+        print(
+            "The following error occurred trying to hash {}: {}".format(
+                volume_name, traceback.format_exc()
+            ),
+            file=sys.stderr,
+        )
+
+    return job_id

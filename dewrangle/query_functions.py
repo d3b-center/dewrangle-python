@@ -665,6 +665,13 @@ def get_job_info(jobid, client=None):
                     operation
                     createdAt
                     completedAt
+                    errors {
+                        edges {
+                            node {
+                                message
+                                id
+                            }
+                        }
                     billingGroup {
                         name
                     }
@@ -676,6 +683,13 @@ def get_job_info(jobid, client=None):
                         operation
                         createdAt
                         completedAt
+                        errors {
+                            edges {
+                                node {
+                                    message
+                                    id
+                                }
+                            }
                         billingGroup {
                             name
                         }
@@ -688,6 +702,13 @@ def get_job_info(jobid, client=None):
                         operation
                         createdAt
                         completedAt
+                        errors {
+                            edges {
+                                node {
+                                    message
+                                    id
+                                }
+                            }
                         billingGroup {
                             name
                         }
@@ -930,13 +951,16 @@ def download_job_result(jobid, client=None):
     job_result = None
 
     job_info = get_job_info(jobid, client)
-    
+
     # check if it's done
     if (
         job_info["job"]["completedAt"] != ""
         and job_info["job"]["completedAt"] is not None
     ):
         job_status = "Complete"
+
+    else:
+        job_status = "Incomplete"
 
     if job_status == "Complete":
         job_type = job_info["job"]["operation"]

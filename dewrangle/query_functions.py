@@ -990,7 +990,7 @@ def create_gql_client(endpoint=None, api_key=None):
         endpoint = "https://dewrangle.com/api/graphql"
 
     if api_key:
-        req_header = {"X-Api-Key": get_api_credential()}
+        req_header = {"X-Api-Key": api_key}
     else:
         req_header = {"X-Api-Key": get_api_credential()}
 

@@ -982,14 +982,17 @@ def download_job_result(jobid, client=None):
     return job_status, job_result
 
 
-def create_gql_client(endpoint=None):
+def create_gql_client(endpoint=None, api_key=None):
     """Create GraphQL client connection"""
 
     # default endpoint
     if endpoint is None:
         endpoint = "https://dewrangle.com/api/graphql"
 
-    req_header = {"X-Api-Key": get_api_credential()}
+    if api_key:
+        req_header = {"X-Api-Key": api_key}
+    else:
+        req_header = {"X-Api-Key": get_api_credential()}
 
     transport = AIOHTTPTransport(
         url=endpoint,

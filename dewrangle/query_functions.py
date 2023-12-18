@@ -1003,13 +1003,16 @@ def create_gql_client(endpoint=None, api_key=None):
     return client
 
 
-def create_rest_creds(endpoint=None):
+def create_rest_creds(endpoint=None, api_key=None):
     """Create Rest connection"""
 
     # default endpoint
     if endpoint is None:
         endpoint = "https://dewrangle.com/api/rest/jobs/"
 
-    req_header = {"X-Api-Key": get_api_credential()}
+    if api_key:
+        req_header = {"X-Api-Key": api_key}
+    else:
+        req_header = {"X-Api-Key": get_api_credential()}
 
     return endpoint, req_header

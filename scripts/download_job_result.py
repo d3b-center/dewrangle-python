@@ -31,20 +31,19 @@ def main(args):
     """Main, take args, run script."""
     job_id, out_base = parse_args(args)
 
-    endpoint = "https://dewrangle.com/api/rest/jobs/"
-
-    req_header = {"X-Api-Key": qf.get_api_credential()}
+    #client = qf.create_client()
 
     if out_base is None:
         out_file = job_id + "_output.csv"
     else:
         out_file = out_base + ".csv"
 
-    url = endpoint + job_id + "/result"
+    status, res = qf.download_job_result(job_id)
 
-    df = qf.request_to_df(url, headers=req_header, stream=True)
+    print(status)
 
-    df.to_csv(out_file, index=False)
+    if res is not None:
+        res.to_csv(out_file, index=False)
 
 
 if __name__ == "__main__":

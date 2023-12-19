@@ -672,6 +672,7 @@ def get_job_info(jobid, client=None):
                                 id
                             }
                         }
+                    }
                     billingGroup {
                         name
                     }
@@ -690,6 +691,7 @@ def get_job_info(jobid, client=None):
                                     id
                                 }
                             }
+                        }
                         billingGroup {
                             name
                         }
@@ -709,6 +711,7 @@ def get_job_info(jobid, client=None):
                                     id
                                 }
                             }
+                        }
                         billingGroup {
                             name
                         }

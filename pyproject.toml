@@ -1,6 +1,6 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "dewrangle"
@@ -11,6 +11,29 @@ authors = [
 description = "Python API for connecting to Dewrangle"
 readme = "README.md"
 requires-python = ">=3.9"
+dependencies = [
+  "aiohttp",
+  "aiosignal",
+  "async-timeout",
+  "attrs",
+  "backoff",
+  "certifi",
+  "charset-normalizer",
+  "frozenlist",
+  "gql",
+  "graphql-core",
+  "idna",
+  "multidict",
+  "numpy",
+  "pandas",
+  "python-dateutil",
+  "pytz",
+  "requests",
+  "six",
+  "tzdata",
+  "urllib3",
+  "yarl"
+]
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: Apache Software License",
